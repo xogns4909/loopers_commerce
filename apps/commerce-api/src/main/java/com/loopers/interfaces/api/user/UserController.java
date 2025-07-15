@@ -1,5 +1,7 @@
-package com.loopers.domain.example.user;
+package com.loopers.interfaces.api.user;
 
+import com.loopers.application.example.user.UserFacade;
+import com.loopers.application.example.user.UserResponse;
 import com.loopers.interfaces.api.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

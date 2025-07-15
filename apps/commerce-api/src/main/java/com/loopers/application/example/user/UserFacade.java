@@ -1,5 +1,7 @@
-package com.loopers.domain.example.user;
+package com.loopers.application.example.user;
 
+import com.loopers.interfaces.api.user.RegisterUserRequest;
+import com.loopers.domain.example.user.service.UserRegisterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
