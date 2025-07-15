@@ -1,4 +1,4 @@
-package com.loopers.domain.example.user;
+package com.loopers.domain.example.user.model;
 
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;

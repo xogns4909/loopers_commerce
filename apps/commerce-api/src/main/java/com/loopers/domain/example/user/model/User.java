@@ -1,4 +1,4 @@
-package com.loopers.domain.example.user;
+package com.loopers.domain.example.user.model;
 
 import lombok.Builder;
 import lombok.Getter;

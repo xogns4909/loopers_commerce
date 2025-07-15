@@ -1,6 +1,7 @@
-package com.loopers.domain.example.user;
+package com.loopers.infrastructure.example.user.entity;
 
 import com.loopers.domain.BaseEntity;
+import com.loopers.domain.example.user.model.User;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
