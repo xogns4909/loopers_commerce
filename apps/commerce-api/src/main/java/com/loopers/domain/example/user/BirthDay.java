@@ -40,5 +40,7 @@ public class BirthDay {
     }
 
 
-
+    public LocalDate value() {
+        return  birthDay;
+    }
 }

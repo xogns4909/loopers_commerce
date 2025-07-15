@@ -1,8 +1,5 @@
 package com.loopers.domain.example.user;
 
-import com.loopers.support.error.CoreException;
-import com.loopers.support.error.ErrorType;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
