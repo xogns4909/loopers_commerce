@@ -27,4 +27,8 @@ public class UserId {
             throw new CoreException(ErrorType.BAD_REQUEST, "유효하지 않은 아이디입니다.");
         }
     }
+
+    public String value() {
+        return id;
+    }
 }

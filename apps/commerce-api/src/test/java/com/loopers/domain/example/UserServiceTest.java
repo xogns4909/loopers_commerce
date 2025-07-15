@@ -4,7 +4,6 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.loopers.domain.example.user.RegisterUserCommand;
-import com.loopers.domain.example.user.UserRegisterService;
 import com.loopers.domain.example.user.UserRegisterServiceImpl;
 import com.loopers.domain.example.user.UserRepository;
 import com.loopers.support.error.CoreException;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
