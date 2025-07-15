@@ -1,11 +1,14 @@
-package com.loopers.domain.example.user;
+package com.loopers.infrastructure.example.user;
 
+import com.loopers.domain.example.user.model.User;
+import com.loopers.infrastructure.example.user.entity.UserEntity;
+import com.loopers.domain.example.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 @RequiredArgsConstructor
 @Repository
-public class UserRepositoryImpl implements UserRepository  {
+public class UserRepositoryImpl implements UserRepository {
 
     private final JpaUserRepository jpaUserRepository;
 

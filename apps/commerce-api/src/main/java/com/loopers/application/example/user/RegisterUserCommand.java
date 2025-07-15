@@ -1,5 +1,6 @@
-package com.loopers.domain.example.user;
+package com.loopers.application.example.user;
 
+import com.loopers.domain.example.user.model.User;
 import lombok.Builder;
 
 

@@ -1,5 +1,9 @@
-package com.loopers.domain.example.user;
+package com.loopers.application.example.user;
 
+import com.loopers.domain.example.user.model.User;
+import com.loopers.domain.example.user.model.UserId;
+import com.loopers.domain.example.user.service.UserRegisterService;
+import com.loopers.domain.example.user.repository.UserRepository;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;

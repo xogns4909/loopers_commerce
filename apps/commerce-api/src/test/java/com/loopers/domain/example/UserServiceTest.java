@@ -5,11 +5,11 @@ import static org.assertj.core.api.BDDAssertions.thenThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.loopers.domain.example.user.RegisterUserCommand;
-import com.loopers.domain.example.user.User;
-import com.loopers.domain.example.user.UserRegisterServiceImpl;
-import com.loopers.domain.example.user.UserRepository;
-import com.loopers.domain.example.user.UserResponse;
+import com.loopers.application.example.user.RegisterUserCommand;
+import com.loopers.domain.example.user.model.User;
+import com.loopers.application.example.user.UserRegisterServiceImpl;
+import com.loopers.domain.example.user.repository.UserRepository;
+import com.loopers.application.example.user.UserResponse;
 import com.loopers.support.error.CoreException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

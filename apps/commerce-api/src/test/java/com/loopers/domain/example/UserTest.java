@@ -4,7 +4,7 @@ package com.loopers.domain.example;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.loopers.domain.example.user.User;
+import com.loopers.domain.example.user.model.User;
 import com.loopers.support.error.CoreException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,5 +1,6 @@
-package com.loopers.domain.example.user;
+package com.loopers.domain.example.user.repository;
 
+import com.loopers.domain.example.user.model.User;
 import org.springframework.stereotype.Component;
 
 @Component
