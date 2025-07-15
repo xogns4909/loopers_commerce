@@ -4,20 +4,20 @@ package com.loopers.domain.example;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.loopers.domain.example.user.UserEntity;
+import com.loopers.domain.example.user.User;
 import com.loopers.support.error.CoreException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class UserEntityTest {
+public class UserTest {
 
     @Test
     @DisplayName("User가 정상적으로 생성된다.")
     void createUser_success() {
         // given
-        UserEntity user = UserEntity.of("kth4909","xogns4949@naver.com","M","1999-10-23");
+        User user = User.of("kth4909","xogns4949@naver.com","M","1999-10-23");
 
         // when then
         assertThat(user.toString()).contains("kth4909", "xogns4949@naver.com", "M", "1999-10-23");
@@ -33,7 +33,7 @@ public class UserEntityTest {
         String birthDay = "1999-10-23";
 
         // when & then
-        assertThatThrownBy(() -> UserEntity.of(invalidId, email, gender, birthDay))
+        assertThatThrownBy(() -> User.of(invalidId, email, gender, birthDay))
             .isInstanceOf(CoreException.class)
             .hasMessage("유효하지 않은 아이디입니다.");
         }
@@ -50,7 +50,7 @@ public class UserEntityTest {
 
 
         // when & then
-        assertThatThrownBy(() -> UserEntity.of(id, invalidEmail, gender, birthDay))
+        assertThatThrownBy(() -> User.of(id, invalidEmail, gender, birthDay))
             .isInstanceOf(CoreException.class)
             .hasMessage("유효하지 않은 이메일 형식입니다.");
     }
@@ -65,7 +65,7 @@ public class UserEntityTest {
         String gender = "M";
 
         // when & then
-        assertThatThrownBy(() -> UserEntity.of(id, email, gender, invalidBirthDay))
+        assertThatThrownBy(() -> User.of(id, email, gender, invalidBirthDay))
             .isInstanceOf(CoreException.class)
             .hasMessage("유효하지 않은 생년월일 형식입니다.");
     }

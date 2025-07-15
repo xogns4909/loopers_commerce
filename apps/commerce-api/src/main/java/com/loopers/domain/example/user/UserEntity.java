@@ -1,33 +1,41 @@
 package com.loopers.domain.example.user;
 
-import lombok.Builder;
+import com.loopers.domain.BaseEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.ToString;
+import lombok.NoArgsConstructor;
 
-
+@Entity
 @Getter
-@ToString
-public class UserEntity {
+@Table(name = "members")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class UserEntity extends BaseEntity {
 
-    private final UserId userId;
-    private final Email email;
-    private final Gender gender;
-    private final BirthDay birthDay;
+    private String userId;
+    private String email;
+    private String gender;
+    private String birthday;
 
-    @Builder
-    public UserEntity(UserId userId, Email email, Gender gender, BirthDay birthDay) {
+    public UserEntity(String userId, String email, String gender, String birthday) {
         this.userId = userId;
         this.email = email;
         this.gender = gender;
-        this.birthDay = birthDay;
+        this.birthday = birthday;
     }
 
-    public static UserEntity of(String id, String email, String gender, String birthDay) {
+
+    public User toDomain() {
+        return User.of(userId, email, gender, birthday);
+    }
+
+    public static UserEntity fromDomain(User user) {
         return new UserEntity(
-            UserId.of(id),
-            Email.of(email),
-            Gender.of(gender),
-            BirthDay.of(birthDay)
+            user.getUserId().value(),
+            user.getEmail().value(),
+            user.getGender().name(),
+            user.getBirthDay().value().toString()
         );
     }
 }
