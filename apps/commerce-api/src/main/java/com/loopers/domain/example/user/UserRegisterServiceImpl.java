@@ -14,15 +14,15 @@ public class UserRegisterServiceImpl implements UserRegisterService {
     @Override
     public UserResponse register(RegisterUserCommand registerUserCommand) {
 
-        UserEntity user = registerUserCommand.toUserEntity();
+        User user = registerUserCommand.toUserEntity();
         validatioDuplicateId(user.getUserId());
 
-        return null;
+        return UserResponse.from(userRepository.save(user));
     }
 
     private void validatioDuplicateId(UserId userId) {
 
-        if (userRepository.findByUserId(userId.getId())) {
+        if (userRepository.existsByUserId(userId.getId())) {
             throw new CoreException(ErrorType.BAD_REQUEST,"이미 존재하는 ID 입니다.");
         }
 

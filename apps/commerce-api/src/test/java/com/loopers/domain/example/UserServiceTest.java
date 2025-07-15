@@ -1,13 +1,16 @@
 package com.loopers.domain.example;
 
+import static org.assertj.core.api.BDDAssertions.then;
 import static org.assertj.core.api.BDDAssertions.thenThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.loopers.domain.example.user.RegisterUserCommand;
+import com.loopers.domain.example.user.User;
 import com.loopers.domain.example.user.UserRegisterServiceImpl;
 import com.loopers.domain.example.user.UserRepository;
+import com.loopers.domain.example.user.UserResponse;
 import com.loopers.support.error.CoreException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,18 +29,13 @@ public class UserServiceTest {
 
 
 
-    @BeforeEach
-    void setUp() {
-        userService = new UserRegisterServiceImpl(repository); // ← repository가 null임!
-    }
-
     @Test
     @DisplayName("중복된 ID 로 가입 시 예외가 발생 된다.")
     void validation_duplicate_Id() {
         //given
         String id = "kth4909";
         RegisterUserCommand cmd = new RegisterUserCommand(id, "kth4909@adfa.com", "M", "1999-10-23");
-        given(repository.findByUserId(id)).willReturn(true);
+        given(repository.existsByUserId(id)).willReturn(true);
 
         //when && then
         thenThrownBy(() -> userService.register(cmd))
@@ -45,5 +43,25 @@ public class UserServiceTest {
             .hasMessage("이미 존재하는 ID 입니다.");
     }
 
+
+    @Test
+    @DisplayName("성공적으로 가입이 된다.")
+    void register_success() {
+
+        // given
+        RegisterUserCommand registerUserCommand = new RegisterUserCommand("kth4909", "kth4909@adfa.com", "M", "1999-10-23");
+        User savedEntity = registerUserCommand.toUserEntity();
+        given(repository.existsByUserId(savedEntity.getUserId().value())).willReturn(false);
+        given(repository.save(any(User.class))).willReturn(savedEntity);
+
+        //when
+        UserResponse response = userService.register(registerUserCommand);
+
+
+        //then
+        then(response).isNotNull();
+        then(response.userId()).isEqualTo("kth4909");
+
+    }
 
 }
