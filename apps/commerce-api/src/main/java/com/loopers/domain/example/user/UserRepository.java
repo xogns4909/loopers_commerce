@@ -1,5 +1,8 @@
 package com.loopers.domain.example.user;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public interface UserRepository {
 
     public User findByUserId(String userId);
