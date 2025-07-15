@@ -1,4 +1,4 @@
-package com.loopers.domain.example;
+package com.loopers.domain.example.user;
 
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -7,15 +7,16 @@ import lombok.Getter;
 
 
 @Getter
-public class UserEntity  {
+public class UserEntity {
 
     private final String userId;
     private final String email;
-    private final String name;
-    private final String birthDate;
+    private final String gender;
+    private final String birthDay;
 
     @Builder
-    public UserEntity(String userId, String email, String name, String birthDate) {
+    public UserEntity(String userId, String email, String gender, String birthDay) {
+
         if (userId == null || !userId.matches("^[a-zA-Z0-9]{1,10}$")) {
             throw new CoreException(ErrorType.BAD_REQUEST);
         }
@@ -24,13 +25,13 @@ public class UserEntity  {
             throw new CoreException(ErrorType.BAD_REQUEST);
         }
 
-        if (birthDate == null || !birthDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+        if (birthDay == null || !birthDay.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
             throw new CoreException(ErrorType.BAD_REQUEST);
         }
 
         this.userId = userId;
         this.email = email;
-        this.name = name;
-        this.birthDate = birthDate;
+        this.gender = gender;
+        this.birthDay = birthDay;
     }
 }

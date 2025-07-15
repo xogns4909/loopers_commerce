@@ -1,6 +1,7 @@
 package com.loopers.domain.example;
 
 
+import com.loopers.domain.example.user.UserEntity;
 import com.loopers.support.error.CoreException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -17,15 +18,15 @@ public class UserEntityTest {
         UserEntity user = UserEntity.builder()
             .userId("kth4909")
             .email("xogns4949@naver.com")
-            .name("김태훈")
-            .birthDate("1999-10-23")
+            .gender("M")
+            .birthDay("1999-10-23")
             .build();
 
         // when & then
         Assertions.assertEquals("kth4909", user.getUserId());
         Assertions.assertEquals("xogns4949@naver.com", user.getEmail());
-        Assertions.assertEquals("김태훈", user.getName());
-        Assertions.assertEquals("1999-10-23", user.getBirthDate());
+        Assertions.assertEquals("M", user.getGender());
+        Assertions.assertEquals("1999-10-23", user.getBirthDay());
     }
 
     @DisplayName("유효하지 않은 ID 형식이면 예외가 발생한다")
@@ -33,12 +34,12 @@ public class UserEntityTest {
     @ValueSource(strings = {"invalidId1!", "toooolongusername", "abc@"})
     void user_invalidId(String invalidId){
         String email = "xogns4949@naver.com";
-        String name = "김태훈";
-        String birthDate = "1999-10-23";
+        String gender = "M";
+        String birthDay = "1999-10-23";
 
         // when & then
         Assertions.assertThrows(CoreException.class, () -> {
-            new UserEntity(invalidId, email, name, birthDate);
+            new UserEntity(invalidId, email, gender, birthDay);
         });
     }
 
@@ -48,12 +49,12 @@ public class UserEntityTest {
     void user_invalidEmail(String invalidEmail){
         String id = "xogns4909";
         String name = "김태훈";
-        String birthDate = "1999-10-23";
+        String birthDay = "1999-10-23";
 
 
         // when & then
         Assertions.assertThrows(CoreException.class, () -> {
-            new UserEntity(id, invalidEmail, name, birthDate);
+            new UserEntity(id, invalidEmail, name, birthDay);
         });
     }
 
@@ -64,11 +65,11 @@ public class UserEntityTest {
         // given
         String id = "xogns4909";
         String email = "xogns4949@naver.com";
-        String name = "김태훈";
+        String gender = "M";
 
         // when & then
         Assertions.assertThrows(CoreException.class, () -> {
-            new UserEntity(id, email, name, invalidBirthDate);
+            new UserEntity(id, email, gender, invalidBirthDate);
         });
     }
 
