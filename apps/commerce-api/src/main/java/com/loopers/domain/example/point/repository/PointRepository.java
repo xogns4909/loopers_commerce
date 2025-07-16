@@ -9,4 +9,5 @@ public interface PointRepository {
 
     public Optional<Point> findByUserId(String UserId);
 
+    public Point save(Point point);
 }
