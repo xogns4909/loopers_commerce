@@ -19,13 +19,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+public class UserRegisterServiceTest {
 
     @Mock
     private UserRepository repository;
 
     @InjectMocks
-    private UserRegisterServiceImpl userService;
+    private UserRegisterServiceImpl userRegisterService;
 
 
 
@@ -38,7 +38,7 @@ public class UserServiceTest {
         given(repository.existsByUserId(id)).willReturn(true);
 
         //when && then
-        thenThrownBy(() -> userService.register(cmd))
+        thenThrownBy(() -> userRegisterService.register(cmd))
             .isInstanceOf(CoreException.class)
             .hasMessage("이미 존재하는 ID 입니다.");
     }
@@ -55,7 +55,7 @@ public class UserServiceTest {
         given(repository.save(any(User.class))).willReturn(savedEntity);
 
         //when
-        UserResponse response = userService.register(registerUserCommand);
+        UserResponse response = userRegisterService.register(registerUserCommand);
 
 
         //then
@@ -63,5 +63,6 @@ public class UserServiceTest {
         then(response.userId()).isEqualTo("kth4909");
 
     }
+    
 
 }
