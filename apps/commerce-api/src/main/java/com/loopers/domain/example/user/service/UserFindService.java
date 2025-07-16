@@ -8,4 +8,6 @@ public interface UserFindService {
 
     public User findByUserId(String userId);
 
+    public boolean existsByUserId(String userId);
+
 }
