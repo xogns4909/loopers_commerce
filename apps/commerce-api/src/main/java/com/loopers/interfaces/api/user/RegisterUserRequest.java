@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.user;
 
-import com.loopers.application.example.user.RegisterUserCommand;
+import com.loopers.application.user.RegisterUserCommand;
 import jakarta.validation.constraints.NotBlank;
 
 public record RegisterUserRequest(

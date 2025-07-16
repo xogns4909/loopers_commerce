@@ -1,9 +1,7 @@
 package com.loopers.interfaces.api.point;
 
 
-import com.loopers.application.example.user.UserResponse;
-import com.loopers.domain.example.point.model.Point;
-import com.loopers.domain.example.user.model.User;
+import com.loopers.domain.point.model.Point;
 import java.math.BigDecimal;
 
 public record PointResponse(String userId, BigDecimal balance) {
