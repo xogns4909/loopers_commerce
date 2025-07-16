@@ -18,4 +18,9 @@ public class PointRepositoryImpl implements PointRepository {
         return Optional.ofNullable(jpaPointRepository.findByUserId(userId))
             .map(PointEntity::toModel);
     }
+
+    @Override
+    public Point save(Point point) {
+        return jpaPointRepository.save(PointEntity.from(point)).toModel();
+    }
 }
