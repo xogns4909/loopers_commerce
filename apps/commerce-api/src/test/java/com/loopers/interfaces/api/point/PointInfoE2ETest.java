@@ -16,7 +16,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class PointQueryE2ETest {
+class PointInfoE2ETest {
 
     @Autowired
     private TestRestTemplate restTemplate;

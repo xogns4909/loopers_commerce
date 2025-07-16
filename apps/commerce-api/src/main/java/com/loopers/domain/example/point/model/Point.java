@@ -15,8 +15,9 @@ public class Point {
         this.balance = initialBalance;
     }
 
-    public void charge(Balance amount) {
+    public Point charge(Balance amount) {
         this.balance = this.balance.add(amount);
+        return this;
     }
 
     public static Point of(String userId, BigDecimal amount) {
