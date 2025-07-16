@@ -24,8 +24,17 @@ public record Balance(BigDecimal balance) {
         }
     }
 
+    public static Balance of(BigDecimal amount) {
+        return new Balance(amount);
+    }
+
+    public BigDecimal value(){
+        return this.balance;
+    }
+
     public boolean isNegative() {
         return balance.signum() < 0;
     }
+
 
 }
