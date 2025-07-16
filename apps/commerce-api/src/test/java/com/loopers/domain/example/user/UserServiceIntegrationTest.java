@@ -1,4 +1,4 @@
-package com.loopers.domain.example;
+package com.loopers.domain.example.user;
 
 import org.springframework.boot.test.context.SpringBootTest;
 
