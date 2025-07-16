@@ -16,4 +16,9 @@ public class UserFindServiceImpl implements UserFindService {
     public User findByUserId(String userId) {
         return userRepository.findByUserId(userId).orElse(null);
     }
+
+    @Override
+    public boolean existsByUserId(String userId) {
+        return userRepository.existsByUserId(userId);
+    }
 }
