@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.given;
 import com.loopers.application.example.user.UserFindServiceImpl;
 import com.loopers.domain.example.user.model.User;
 import com.loopers.domain.example.user.repository.UserRepository;
+import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ public class UserFindServiceTest {
         User user = User.of("kth4909", "xogns4949@naver.com", "M", "1999-10-23");
 
         given(userRepository.findByUserId(userId))
-            .willReturn(user);
+            .willReturn(Optional.of(user));
 
         // when
         User foundUser = userFindService.findByUserId(userId);
@@ -52,8 +53,7 @@ public class UserFindServiceTest {
         String nonExistentUserId = "nonExistentUser";
 
         //when
-        given(userRepository.findByUserId(nonExistentUserId))
-            .willReturn(null);
+        given(userRepository.findByUserId(nonExistentUserId)).willReturn(Optional.empty());
 
         // then
         Assertions.assertThat(userFindService.findByUserId(nonExistentUserId)).isNull();
