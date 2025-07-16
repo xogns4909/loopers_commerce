@@ -16,13 +16,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserFacade userRegisterFacade;
+    private final UserFacade userFacade;
 
     @PostMapping
     public ResponseEntity<ApiResponse<UserResponse>> register(
         @Valid @RequestBody RegisterUserRequest request
     ) {
-        UserResponse response = userRegisterFacade.register(request);
+        UserResponse response = userFacade.register(request);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<UserResponse>> login(@Valid @RequestBody LoginRequest loginRequest) {
+        UserResponse loginUser = userFacade.login(loginRequest);
+
+        return ResponseEntity.ok()
+            .header("X-USER-ID", loginUser.userId())
+            .body(ApiResponse.success(loginUser));
     }
 }
