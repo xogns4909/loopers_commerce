@@ -2,7 +2,7 @@ package com.loopers.interfaces.api.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.application.example.user.UserResponse;
+import com.loopers.application.user.UserResponse;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;

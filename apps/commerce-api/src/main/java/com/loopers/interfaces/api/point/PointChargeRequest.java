@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.point;
 
-import com.loopers.application.example.point.AddPointCommand;
+import com.loopers.application.point.AddPointCommand;
 import java.math.BigDecimal;
 
 public record PointChargeRequest(String userId, BigDecimal balance) {
