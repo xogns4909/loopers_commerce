@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @ConfigurationPropertiesScan
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "com.loopers.domain.example.user")
 public class CommerceApiApplication {
 
     @PostConstruct

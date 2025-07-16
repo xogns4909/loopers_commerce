@@ -2,7 +2,6 @@ package com.loopers.interfaces.api.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.loopers.application.example.user.UserFacade;
 import com.loopers.application.example.user.UserResponse;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
@@ -30,7 +29,7 @@ class UserLoginE2ETest {
 
     private static final String REGISTER_URL = "/api/v1/users";
     private static final String LOGIN_URL = "/api/v1/users/login";
-    private UserFacade userFacade;
+
 
     @AfterEach
     void tearDown() {
