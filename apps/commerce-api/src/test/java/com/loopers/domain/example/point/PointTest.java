@@ -15,7 +15,7 @@ class PointTest {
     @Test
     @DisplayName("Point 객체가 정상 생성된다.")
     void create_point_success() {
-        Point point = new Point("kth4909", new Balance(BigDecimal.ZERO));
+        Point point = Point.of("kth4909",BigDecimal.ZERO);
 
         assertThat(point.getUserId()).isEqualTo("kth4909");
         assertThat(point.getBalance().balance()).isEqualTo(BigDecimal.ZERO);
@@ -24,7 +24,7 @@ class PointTest {
     @Test
     @DisplayName("포인트를 정상적으로 충전할 수 있다.")
     void charge_success() {
-        Point point = new Point("kth4909", new Balance(BigDecimal.ZERO));
+        Point point = Point.of("kth4909",BigDecimal.ZERO);
 
         point.charge(new Balance(BigDecimal.valueOf(1000)));
 
@@ -34,7 +34,7 @@ class PointTest {
     @Test
     @DisplayName("0 이하 금액으로 충전 시 예외가 발생한다.")
     void charge_fail_invalid_amount() {
-        Point point = new Point("kth4909", new Balance(BigDecimal.ZERO));
+        Point point = Point.of("kth4909",BigDecimal.ZERO);
 
         assertThatThrownBy(() -> point.charge(new Balance(BigDecimal.valueOf(-1))))
             .isInstanceOf(CoreException.class)
@@ -45,7 +45,7 @@ class PointTest {
     @Test
     @DisplayName("음수 잔액으로 Point 생성 시 예외 발생")
     void create_point_with_negative_balance() {
-        assertThatThrownBy(() -> new Point("kth4909",new Balance(BigDecimal.valueOf(-100))))
+        assertThatThrownBy(() -> Point.of("kth4909",BigDecimal.valueOf(-10000)))
             .isInstanceOf(CoreException.class)
             .hasMessage("잔액은 0원 이상이어야 합니다.");
     }
