@@ -14,6 +14,6 @@ public class UserFindServiceImpl implements UserFindService {
 
     @Override
     public User findByUserId(String userId) {
-        return userRepository.findByUserId(userId);
+        return userRepository.findByUserId(userId).orElse(null);
     }
 }
