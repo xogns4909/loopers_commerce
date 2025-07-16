@@ -1,8 +1,7 @@
-package com.loopers.domain.example;
+package com.loopers.interfaces.api.user;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.loopers.interfaces.api.user.RegisterUserRequest;
 import com.loopers.application.example.user.UserResponse;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
