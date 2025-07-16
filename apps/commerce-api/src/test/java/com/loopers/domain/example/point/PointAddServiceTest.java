@@ -2,6 +2,7 @@ package com.loopers.domain.example.point;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.loopers.application.example.point.AddPointCommand;
@@ -46,8 +47,9 @@ class PointAddServiceTest {
         AddPointCommand command = new AddPointCommand(userId, chargeAmount);
         given(userFindService.existsByUserId(userId)).willReturn(true);
 
-        Point point = Point.of(userId, BigDecimal.valueOf(50000));
+        Point point = Point.of(userId, BigDecimal.ZERO);
         given(pointFindService.findByUserId(userId)).willReturn(point);
+        given(pointRepository.save(any(Point.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         // when
         PointResponse response = pointAddService.charge(command);
