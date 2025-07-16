@@ -22,4 +22,13 @@ public class PointController {
         PointResponse response = pointFacade.findPointInfo(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PostMapping("/charge")
+    public ResponseEntity<ApiResponse<PointResponse>> chargePoint(@RequestBody PointChargeRequest chargeRequest,
+        HttpServletRequest servletRequest
+    ) {
+        UserCertifyUtil.extractUserId(servletRequest);
+        PointResponse response = pointFacade.chargePoint(chargeRequest);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 }
