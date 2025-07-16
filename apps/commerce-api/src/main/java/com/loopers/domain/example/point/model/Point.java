@@ -24,7 +24,4 @@ public class Point {
     }
 
 
-    public BigDecimal currentBalance() {
-        return balance.balance();
-    }
 }
