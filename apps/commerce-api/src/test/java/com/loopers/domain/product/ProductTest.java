@@ -26,7 +26,7 @@ class ProductTest {
         int quantity = 10;
 
         // when
-        Product product = Product.of(name, description, price, ProductStatus.AVAILABLE, quantity);
+        Product product = Product.of(1L,name, description, price, ProductStatus.AVAILABLE, quantity);
 
         // then
         assertThat(product).isNotNull();
@@ -42,7 +42,7 @@ class ProductTest {
     void invalid_price(int invalidPrice) {
         // when & then
         assertThatThrownBy(() ->
-            Product.of("상품명", "상품 설명", BigDecimal.valueOf(invalidPrice), ProductStatus.AVAILABLE, 10)
+            Product.of(1L,"상품명", "상품 설명", BigDecimal.valueOf(invalidPrice), ProductStatus.AVAILABLE, 10)
         ).isInstanceOf(CoreException.class)
             .satisfies(ex -> {
                 CoreException coreEx = (CoreException) ex;
@@ -54,7 +54,7 @@ class ProductTest {
     @DisplayName("판매 불가 상품이면 구매 시 예외가 발생한다")
     void  invalid_stock() {
         // given
-        Product product = Product.of("상품명", "상품 설명", BigDecimal.valueOf(5000), ProductStatus.UNAVAILABLE, 10);
+        Product product = Product.of(1L,"상품명", "상품 설명", BigDecimal.valueOf(5000), ProductStatus.UNAVAILABLE, 10);
 
         // when & then
         assertThatThrownBy(() -> product.checkPurchasable(1))
@@ -69,7 +69,7 @@ class ProductTest {
     @DisplayName("재고가 부족하면 구매 시 예외가 발생한다")
     void invalid_status() {
         // given
-        Product product = Product.of("상품명", "상품 설명", BigDecimal.valueOf(5000), ProductStatus.AVAILABLE, 1);
+        Product product = Product.of(1L,"상품명", "상품 설명", BigDecimal.valueOf(5000), ProductStatus.AVAILABLE, 1);
 
         // when & then
         assertThatThrownBy(() -> product.checkPurchasable(10))
