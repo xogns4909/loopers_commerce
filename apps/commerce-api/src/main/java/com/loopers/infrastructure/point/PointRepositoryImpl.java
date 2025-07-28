@@ -2,6 +2,7 @@ package com.loopers.infrastructure.point;
 
 import com.loopers.domain.point.model.Point;
 import com.loopers.domain.point.repository.PointRepository;
+import com.loopers.infrastructure.point.entity.PointEntity;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ public class PointRepositoryImpl implements PointRepository {
     @Override
     public Optional<Point> findByUserId(String userId) {
         return Optional.ofNullable(jpaPointRepository.findByUserId(userId))
-            .map(com.loopers.infrastructure.point.PointEntity::toModel);
+            .map(PointEntity::toModel);
     }
 
     @Override
