@@ -8,6 +8,7 @@ sequenceDiagram
     participant OS as OrderService
     participant PS as ProductService
     participant PR as ProductRepository
+    participant DP as DiscountPolicyService
     participant PT as PointService
     participant OR as OrderRepository
     participant OHR as OrderHistoryRepository
@@ -26,10 +27,12 @@ sequenceDiagram
     else
         PR -->> PS: 상품 목록 반환
         PS -->> OS: 확인 완료
-        OS ->> OR: 주문 저장 (status = CREATED)
+        OS ->> DP: 할인 정책 조회 및 적용
+        DP -->> OS: 할인 금액 및 정책 반환
+        OS ->> OR: 주문 저장 (할인 금액 포함, status = CREATED)
         OS ->> OHR: 주문 생성 이력 저장
 
-        OS ->> PT: 포인트 차감 요청
+        OS ->> PT: 포인트 차감 요청 (할인 적용 후 금액)
         alt 포인트 부족
             PT -->> OS: 실패
             OS ->> OHR: 상태 변경 이력 저장 (CREATED → FAILED)
