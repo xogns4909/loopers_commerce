@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.product;
 
-import com.loopers.application.product.ProductSortType;
+import com.loopers.domain.product.ProductSortType;
 
 public record ProductSearchRequest(
     int page,
@@ -8,7 +8,4 @@ public record ProductSearchRequest(
     ProductSortType sortBy,
     Long brandId
 ) {
-    public int offset() {
-        return page * size;
-    }
 }

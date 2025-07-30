@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "product")
 public class ProductEntity extends BaseEntity {
 
