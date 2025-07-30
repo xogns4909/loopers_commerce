@@ -5,16 +5,17 @@ import com.loopers.support.error.ErrorType;
 import java.math.BigDecimal;
 
 
-public record Product(Long id,String name, String description, Price price, ProductStatus productStatus, Stock stock) {
+public record Product(Long id,String name, String description, Price price, ProductStatus productStatus, Stock stock,Long brandId) {
 
-    public static Product of(Long id,String name, String description, BigDecimal price, ProductStatus status, int quantity) {
+    public static Product of(Long id,String name, String description, BigDecimal price, ProductStatus status, int quantity,Long brandId) {
         return new Product(
             id,
             name,
             description,
             Price.of(price),
             status,
-            Stock.of(quantity)
+            Stock.of(quantity),
+            brandId
         );
     }
 
