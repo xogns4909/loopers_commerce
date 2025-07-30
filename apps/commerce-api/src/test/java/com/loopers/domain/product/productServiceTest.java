@@ -1,12 +1,16 @@
 package com.loopers.domain.product;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.BDDMockito.given;
 
 import com.loopers.application.product.ProductInfo;
 import com.loopers.application.product.ProductSearchCommand;
 import com.loopers.application.product.ProductServiceImpl;
+import com.loopers.support.error.CoreException;
 import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,6 +99,33 @@ class ProductServiceTest {
             assertThat(result.getContent()).extracting(ProductInfo::likeCount)
                 .containsExactly(12, 5);
         }
+    }
+
+    @Test
+    @DisplayName("상품 ID로 상품 정보를 조회한다.")
+    void getProduct_success() {
+        // given
+        ProductInfo info = new ProductInfo(1L, "신발", "무신사", 10000, 5);
+        given(productRepository.findProductInfoById(1L)).willReturn(Optional.of(info));
+
+        // when
+        ProductInfo result = productService.getProduct(1L);
+
+        // then
+        assertThat(result.productId()).isEqualTo(1L);
+        assertThat(result.productName()).isEqualTo("신발");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 상품 ID일 경우 CoreException 404 예외를 던진다.")
+    void getProduct_notFound() {
+        // given
+        given(productRepository.findProductInfoById(999L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> productService.getProduct(999L))
+            .isInstanceOf(CoreException.class)
+            .hasMessageContaining("상품을 찾을 수 없습니다.");
     }
 }
 

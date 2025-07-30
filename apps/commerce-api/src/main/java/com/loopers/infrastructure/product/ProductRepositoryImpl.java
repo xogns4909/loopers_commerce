@@ -5,12 +5,16 @@ import com.loopers.application.product.ProductSearchCommand;
 import com.loopers.application.product.QProductInfo;
 import com.loopers.domain.product.ProductRepository;
 import com.loopers.domain.product.ProductSortType;
+import com.loopers.domain.product.model.Product;
 import com.loopers.infrastructure.brand.Entity.QBrandEntity;
+import com.loopers.infrastructure.brand.JpaBrandRepository;
 import com.loopers.infrastructure.like.entity.QLikeEntity;
+import com.loopers.infrastructure.product.entity.ProductEntity;
 import com.loopers.infrastructure.product.entity.QProductEntity;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -22,16 +26,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProductRepositoryImpl implements ProductRepository {
 
+    private final JPAProductRepository jpaProductRepository;
+
     private final JPAQueryFactory queryFactory;
 
     private final QProductEntity product = QProductEntity.productEntity;
     private final QBrandEntity brand = QBrandEntity.brandEntity;
     private final QLikeEntity like = QLikeEntity.likeEntity;
+    private final JpaBrandRepository jpaBrandRepository;
 
     @Override
     public Page<ProductInfo> searchByCondition(ProductSearchCommand command) {
         BooleanExpression where = product.deletedAt.isNull();
-
 
         if (command.brandId() != null) {
             where = where.and(product.brandId.eq(command.brandId()));
@@ -64,6 +70,26 @@ public class ProductRepositoryImpl implements ProductRepository {
             .fetchOne();
 
         return new PageImpl<>(content, command.pageable(), total == null ? 0 : total);
+    }
+
+
+    @Override
+    public Optional<ProductInfo> findProductInfoById(Long id) {
+        return Optional.ofNullable(
+            queryFactory
+                .select(new QProductInfo(
+                    product.id,
+                    product.name,
+                    brand.name,
+                    product.price,
+                    like.count().intValue()
+                ))
+                .from(product)
+                .leftJoin(brand).on(product.brandId.eq(brand.id))
+                .leftJoin(like).on(like.productId.eq(product.id))
+                .where(product.id.eq(id), product.deletedAt.isNull())
+                .fetchOne()
+        );
     }
 
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
