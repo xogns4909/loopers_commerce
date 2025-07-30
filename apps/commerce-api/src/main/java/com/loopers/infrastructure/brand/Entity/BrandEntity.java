@@ -5,11 +5,13 @@ import com.loopers.domain.brand.model.Brand;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "brand")
 public class BrandEntity extends BaseEntity {
 

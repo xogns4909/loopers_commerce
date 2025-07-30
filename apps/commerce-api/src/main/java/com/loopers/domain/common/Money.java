@@ -21,4 +21,8 @@ public abstract class Money {
             throw new CoreException(ErrorType.BAD_REQUEST, "금액은 0 이상이어야 합니다.");
         }
     }
+
+    public BigDecimal value() {
+        return this.amount;
+    }
 }
