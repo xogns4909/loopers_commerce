@@ -4,6 +4,7 @@ package com.loopers.application.product;
 
 
 import com.loopers.domain.product.ProductService;
+import com.loopers.interfaces.api.product.ProductResponse;
 import com.loopers.interfaces.api.product.ProductSearchRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,4 +22,7 @@ public class ProductFacade {
         return productService.getProducts(ProductSearchCommand.from(request,pageable));
     }
 
+    public ProductResponse getProduct(Long productId) {
+        return ProductResponse.from(productService.getProduct(productId));
+    }
 }
