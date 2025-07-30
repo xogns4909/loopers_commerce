@@ -13,6 +13,7 @@ import com.loopers.infrastructure.product.entity.ProductEntity;
 import com.loopers.infrastructure.product.entity.QProductEntity;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -75,21 +76,24 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<ProductInfo> findProductInfoById(Long id) {
-        return Optional.ofNullable(
-            queryFactory
-                .select(new QProductInfo(
-                    product.id,
-                    product.name,
-                    brand.name,
-                    product.price,
-                    like.count().intValue()
-                ))
-                .from(product)
-                .leftJoin(brand).on(product.brandId.eq(brand.id))
-                .leftJoin(like).on(like.productId.eq(product.id))
-                .where(product.id.eq(id), product.deletedAt.isNull())
-                .fetchOne()
-        );
+        ProductInfo info = queryFactory
+            .select(new QProductInfo(
+                product.id,
+                product.name,
+                brand.name,
+                product.price,
+                Expressions.constant(0)
+            ))
+            .from(product)
+            .leftJoin(brand).on(product.brandId.eq(brand.id))
+            .where(product.id.eq(id))
+            .fetchOne();
+
+        if (info == null || info.brandName() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(info);
+
     }
 
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
