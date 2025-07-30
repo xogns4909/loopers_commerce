@@ -23,4 +23,8 @@ public class Stock {
     public boolean isEnough(int amount) {
         return this.quantity >= amount;
     }
+
+    public int value() {
+        return this.quantity;
+    }
 }

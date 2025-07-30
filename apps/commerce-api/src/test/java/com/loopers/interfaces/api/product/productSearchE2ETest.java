@@ -3,6 +3,7 @@ package com.loopers.interfaces.api.product;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.product.ProductInfo;
+import com.loopers.domain.product.model.ProductStatus;
 import com.loopers.infrastructure.brand.Entity.BrandEntity;
 import com.loopers.infrastructure.brand.JpaBrandRepository;
 import com.loopers.infrastructure.product.JPAProductRepository;
@@ -47,10 +48,38 @@ class ProductListE2ETest {
     @DisplayName("상품 목록을 가격 내림차순으로 조회하면, 비싼 순서대로 정렬된 결과를 반환한다.")
     void getProductList_sortedByPriceDesc_success() {
         // given
-        BrandEntity brand = brandRepository.save(new BrandEntity("무신사"));
-        productRepository.save(new ProductEntity("가방", 5000, brand.getId()));
-        productRepository.save(new ProductEntity("신발", 15000, brand.getId()));
-        productRepository.save(new ProductEntity("자켓", 10000, brand.getId()));
+        BrandEntity brand = brandRepository.save(
+            BrandEntity.builder()
+                .name("무신사")
+                .build()
+        );
+
+        productRepository.save(ProductEntity.builder()
+            .name("가방")
+            .description("여행용 가방")
+            .price(5000)
+            .productStatus(ProductStatus.AVAILABLE)
+            .stockQuantity(100)
+            .brandId(brand.getId())
+            .build());
+
+        productRepository.save(ProductEntity.builder()
+            .name("신발")
+            .description("운동화")
+            .price(15000)
+            .productStatus(ProductStatus.AVAILABLE)
+            .stockQuantity(50)
+            .brandId(brand.getId())
+            .build());
+
+        productRepository.save(ProductEntity.builder()
+            .name("자켓")
+            .description("겨울용 자켓")
+            .price(10000)
+            .productStatus(ProductStatus.AVAILABLE)
+            .stockQuantity(30)
+            .brandId(brand.getId())
+            .build());
 
         String url = PRODUCT_LIST_URL + "?page=0&size=10&sortBy=PRICE_DESC";
 
@@ -59,7 +88,8 @@ class ProductListE2ETest {
             url,
             HttpMethod.GET,
             null,
-            new ParameterizedTypeReference<>() {}
+            new ParameterizedTypeReference<>() {
+            }
         );
 
         // then
