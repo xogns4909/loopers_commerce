@@ -22,6 +22,6 @@ public class BrandRepositoryImpl implements BrandRepository {
     @Override
     public Brand save(Brand brand) {
         return jpaBrandRepository.save(BrandEntity.from(brand))
-            .toModel(); // Domain Model → Entity → 다시 Model로
+            .toModel();
     }
 }

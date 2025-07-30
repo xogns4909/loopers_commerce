@@ -1,11 +1,7 @@
 package com.loopers.application.brand;
 
 import com.loopers.domain.brand.BrandService;
-import com.loopers.domain.brand.model.Brand;
 import com.loopers.interfaces.api.like.BrandResponse;
-import com.loopers.support.error.CoreException;
-import com.loopers.support.error.ErrorType;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
