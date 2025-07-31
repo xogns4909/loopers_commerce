@@ -1,4 +1,4 @@
-package com.loopers.interfaces.api.like;
+package com.loopers.interfaces.api.brand;
 
 import com.loopers.application.brand.BrandFacade;
 import com.loopers.interfaces.api.ApiResponse;

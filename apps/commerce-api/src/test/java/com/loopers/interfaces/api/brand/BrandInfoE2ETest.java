@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.loopers.infrastructure.brand.JpaBrandRepository;
 import com.loopers.infrastructure.brand.Entity.BrandEntity;
 import com.loopers.interfaces.api.ApiResponse;
-import com.loopers.interfaces.api.like.BrandResponse;
 import com.loopers.utils.DatabaseCleanUp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
