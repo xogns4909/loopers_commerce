@@ -2,6 +2,7 @@ package com.loopers.infrastructure.like.entity;
 
 import com.loopers.domain.BaseEntity;
 
+import com.loopers.domain.user.model.UserId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -15,5 +16,5 @@ public class LikeEntity extends BaseEntity {
 
     private Long productId;
 
-    private Long userId;
+    private String userId;
 }
