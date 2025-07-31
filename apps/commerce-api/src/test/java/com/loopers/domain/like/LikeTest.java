@@ -1,5 +1,7 @@
 package com.loopers.domain.like;
 
+import com.loopers.domain.like.model.Like;
+import com.loopers.domain.user.model.UserId;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +19,7 @@ class LikeTest {
         Long productId = 100L;
 
         // when
-        Like like = Like.of(1L, userId, productId);
+        Like like = Like.reconstruct(1L , UserId.of(userId), productId);
 
         // then
         assertThat(like).isNotNull();
@@ -32,7 +34,7 @@ class LikeTest {
         Long productId = 100L;
 
         // when & then
-        assertThatThrownBy(() -> Like.of(1L, null, productId))
+        assertThatThrownBy(() -> Like.reconstruct(1L, null, productId))
             .isInstanceOf(CoreException.class)
             .satisfies(e -> {
                 CoreException ex = (CoreException) e;
@@ -47,7 +49,7 @@ class LikeTest {
         String userId = "userId";
 
         // when & then
-        assertThatThrownBy(() -> Like.of(1L, userId, null))
+        assertThatThrownBy(() -> Like.reconstruct(1L, UserId.of(userId), null))
             .isInstanceOf(CoreException.class)
             .satisfies(e -> {
                 CoreException ex = (CoreException) e;

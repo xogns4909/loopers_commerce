@@ -14,4 +14,6 @@ public interface ProductRepository {
 
     Optional<ProductInfo> findProductInfoById(Long id);
 
+    void save(Product product);
+
 }
