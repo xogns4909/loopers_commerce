@@ -13,7 +13,7 @@ class LikeTest {
     @DisplayName("정상 생성")
     void create_success() {
         // given
-        Long userId = 1L;
+        String userId = "kth4909";
         Long productId = 100L;
 
         // when
@@ -44,7 +44,7 @@ class LikeTest {
     @DisplayName("productId가 null이면 CoreException 404 예외 발생")
     void invalid_null_productId() {
         // given
-        Long userId = 1L;
+        String userId = "userId";
 
         // when & then
         assertThatThrownBy(() -> Like.of(1L, userId, null))
