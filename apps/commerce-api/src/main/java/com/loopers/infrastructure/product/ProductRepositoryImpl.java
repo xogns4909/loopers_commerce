@@ -34,7 +34,6 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final QProductEntity product = QProductEntity.productEntity;
     private final QBrandEntity brand = QBrandEntity.brandEntity;
     private final QLikeEntity like = QLikeEntity.likeEntity;
-    private final JpaBrandRepository jpaBrandRepository;
 
     @Override
     public Page<ProductInfo> searchByCondition(ProductSearchCommand command) {
@@ -94,6 +93,11 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
         return Optional.of(info);
 
+    }
+
+    @Override
+    public void save(Product product) {
+        jpaProductRepository.save(ProductEntity.from(product));
     }
 
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
