@@ -2,7 +2,7 @@ package com.loopers.application.point;
 
 import com.loopers.domain.point.model.Balance;
 import com.loopers.domain.point.model.Point;
-import com.loopers.domain.point.model.service.PointAddService;
+import com.loopers.domain.point.service.PointAddService;
 import com.loopers.domain.point.repository.PointRepository;
 import com.loopers.domain.point.service.PointFindService;
 import com.loopers.domain.user.service.UserFindService;
