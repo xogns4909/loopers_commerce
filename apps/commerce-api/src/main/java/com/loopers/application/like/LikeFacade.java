@@ -24,7 +24,9 @@ public class LikeFacade {
 
     public LikeResponse like(LikeRequest request) {
 
-        productService.getProduct(request.productId());
+        if(!productService.existsProduct(request.productId())){
+            throw new CoreException(ErrorType.NOT_FOUND);
+        }
 
         LikeCommand command = toCommand(request);
         LikeResult result = likeService.like(command);

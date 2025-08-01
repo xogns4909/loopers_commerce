@@ -8,6 +8,7 @@ public interface ProductService {
 
     Page<ProductInfo> getProducts(ProductSearchCommand from);
 
+    boolean existsProduct(Long productId);
 
     ProductInfo getProduct(Long productId);
 }

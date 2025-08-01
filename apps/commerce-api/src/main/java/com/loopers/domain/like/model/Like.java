@@ -14,7 +14,9 @@ public record Like(Long id, UserId userId, Long productId) {
     }
 
     public static Like reconstruct(Long id, UserId userId, Long productId) {
+        if (userId == null || productId == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST);
+        }
         return new Like(id, userId, productId);
     }
-
 }
