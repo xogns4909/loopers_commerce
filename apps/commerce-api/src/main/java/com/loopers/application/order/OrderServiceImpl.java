@@ -7,10 +7,13 @@ import com.loopers.domain.order.OrderService;
 import com.loopers.domain.order.model.Order;
 import com.loopers.domain.order.model.OrderItem;
 import com.loopers.domain.user.model.UserId;
-import com.loopers.infrastructure.order.entity.OrderItemEntity;
+import com.loopers.interfaces.api.order.OrderDetailResponse;
+import com.loopers.interfaces.api.order.OrderSummaryResponse;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -29,7 +32,6 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = Order.create(userId, orderItems);
         Order savedOrder = orderRepository.save(order);
-        // ID만 넘겨서 저장
         orderItemRepository.saveAll(orderItems, savedOrder.getId());
 
         return savedOrder;
@@ -39,5 +41,15 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order save(Order order) {
         return orderRepository.save(order);
+    }
+
+    @Override
+    public Page<OrderSummaryResponse> getUserOrders(OrderSearchCommand command) {
+        return orderRepository.findOrderSummariesByUserId(command.userId(), command.pageable());
+    }
+
+    @Override
+    public OrderDetailResponse getOrderDetail(OrderDetailCommand command) {
+        return orderRepository.findOrderDetailByUserIdAndOrderId(command.userId(), command.orderId());
     }
 }
