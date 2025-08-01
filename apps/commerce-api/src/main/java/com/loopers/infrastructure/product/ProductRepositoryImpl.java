@@ -105,6 +105,13 @@ public class ProductRepositoryImpl implements ProductRepository {
         jpaProductRepository.save(ProductEntity.from(product));
     }
 
+
+    @Override
+    public Optional<Product> findById(Long productId) {
+        return jpaProductRepository.findById(productId)
+            .map(ProductEntity::toModel);
+    }
+
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
         return switch (sortType) {
             case LATEST -> product.createdAt.desc();

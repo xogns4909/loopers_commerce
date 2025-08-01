@@ -27,4 +27,11 @@ public class Stock {
     public int value() {
         return this.quantity;
     }
+
+    public Stock minus(int quantity) {
+        if (quantity < 0 || this.quantity < quantity) {
+            throw new CoreException(ErrorType.STOCK_SHORTAGE, "차감할 수 없는 재고입니다.");
+        }
+        return new Stock(this.quantity - quantity);
+    }
 }

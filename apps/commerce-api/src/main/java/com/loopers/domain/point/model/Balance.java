@@ -5,7 +5,6 @@ import com.loopers.support.error.ErrorType;
 import java.math.BigDecimal;
 import lombok.Getter;
 
-
 @Getter
 public final class Balance {
     private final BigDecimal balance;
@@ -28,8 +27,20 @@ public final class Balance {
         return new Balance(this.balance.add(amount.balance));
     }
 
+    public Balance subtract(Balance amount) {
+        if (!isGreaterThanOrEqual(amount)) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "차감할 수 있는 금액이 부족합니다.");
+        }
+        return new Balance(this.balance.subtract(amount.balance));
+    }
+
+    public boolean isGreaterThanOrEqual(Balance other) {
+        return this.balance.compareTo(other.balance) >= 0;
+    }
+
     public BigDecimal value() {
         return this.balance;
     }
 }
+
 

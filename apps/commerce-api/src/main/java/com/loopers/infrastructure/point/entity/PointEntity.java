@@ -1,7 +1,9 @@
 package com.loopers.infrastructure.point.entity;
 
 import com.loopers.domain.BaseEntity;
+import com.loopers.domain.point.model.Balance;
 import com.loopers.domain.point.model.Point;
+import com.loopers.domain.user.model.UserId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -26,14 +28,15 @@ public class PointEntity extends BaseEntity {
         this.balance = balance;
     }
 
+
+
     public static PointEntity from(Point point) {
-        return new PointEntity(
-            point.getUserId().value(),
-            point.getBalance().value()
-        );
+        PointEntity entity = new PointEntity(point.getUserId().value(), point.getBalance().value());
+        entity.setId(point.getId());
+        return entity;
     }
 
     public Point toModel() {
-        return Point.of(userId, balance);
+        return Point.reconstruct(getId(), userId, balance);
     }
 }
