@@ -1,11 +1,12 @@
-package com.loopers.domain.payment;
+package com.loopers.domain.payment.model;
 
 
 import com.loopers.domain.common.Money;
 import com.loopers.domain.order.model.Order;
+import com.loopers.domain.order.model.OrderAmount;
 import java.math.BigDecimal;
 
-class PaymentAmount extends Money {
+public class PaymentAmount extends Money {
     public PaymentAmount(BigDecimal amount) {
         super(amount);
     }
@@ -15,7 +16,7 @@ class PaymentAmount extends Money {
         return super.value();
     }
 
-    public static PaymentAmount from(Order order) {
-        return new PaymentAmount(order.getAmount().value());
+    public static PaymentAmount from(OrderAmount amount) {
+        return new PaymentAmount(amount.value());
     }
 }

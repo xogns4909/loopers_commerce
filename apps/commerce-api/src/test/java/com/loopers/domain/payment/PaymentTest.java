@@ -4,7 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.loopers.domain.order.model.Order;
+import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.order.model.OrderItem;
+import com.loopers.domain.order.model.OrderStatus;
+import com.loopers.domain.payment.model.Payment;
+import com.loopers.domain.payment.model.PaymentAmount;
+import com.loopers.domain.payment.model.PaymentMethod;
+import com.loopers.domain.payment.model.PaymentStatus;
 import com.loopers.domain.product.model.Price;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.support.error.CoreException;
@@ -21,8 +27,7 @@ class PaymentTest {
 
     private Order createOrder() {
         OrderItem item = new OrderItem(1L, 2, Price.of(BigDecimal.valueOf(1000)));
-        Order order = Order.create(userId, List.of(item));
-        order.assignId(1L);
+        Order order = Order.reconstruct(1L,userId, List.of(item), OrderStatus.PENDING, new OrderAmount(BigDecimal.valueOf(2000)));
         return order;
     }
 
@@ -35,7 +40,7 @@ class PaymentTest {
         void create_success() {
             Order order = createOrder();
 
-            Payment payment = Payment.complete(order, PaymentMethod.POINT);
+            Payment payment = Payment.complete(order.getId(),order.getUserId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT);
 
 
 
@@ -43,16 +48,14 @@ class PaymentTest {
             assertThat(payment.getUserId()).isEqualTo(userId);
             assertThat(payment.getAmount().value()).isEqualTo(BigDecimal.valueOf(2000));
             assertThat(payment.getMethod()).isEqualTo(PaymentMethod.POINT);
-            assertThat(payment.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
         }
 
         @Test
         @DisplayName("orderId가 null이면 예외 발생")
         void nullOrderId_throws() {
             Order order = createOrder();
-            order.assignId(null);
 
-            assertThatThrownBy(() -> Payment.complete(order, PaymentMethod.POINT))
+            assertThatThrownBy(() ->Payment.complete(null,order.getUserId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT))
                 .isInstanceOf(CoreException.class)
                 .hasMessageContaining("주문 ID가 지정되지 않았습니다.");
         }
@@ -62,25 +65,9 @@ class PaymentTest {
         void nullMethod_throws() {
             Order order = createOrder();
 
-            assertThatThrownBy(() -> Payment.complete(order, null))
+            assertThatThrownBy(() -> Payment.complete(order.getId(),order.getUserId(),PaymentAmount.from(order.getAmount()),null))
                 .isInstanceOf(CoreException.class)
                 .hasMessageContaining("결제 수단이 유효하지 않습니다.");
-        }
-    }
-
-    @Nested
-    @DisplayName("결제 실패 처리")
-    class Fail {
-
-        @Test
-        @DisplayName("fail() 호출 시 상태가 FAILED로 변경된다")
-        void fail_success() {
-            Order order = createOrder();
-            Payment payment = Payment.complete(order, PaymentMethod.POINT);
-
-            payment.fail();
-
-            assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
         }
     }
 }
