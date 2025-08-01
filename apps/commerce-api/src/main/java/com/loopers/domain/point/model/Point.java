@@ -1,12 +1,15 @@
 package com.loopers.domain.point.model;
 
 import com.loopers.domain.user.model.UserId;
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import java.math.BigDecimal;
 import lombok.Getter;
 
 @Getter
 public class Point {
 
+    private Long id;
     private final UserId userId;
     private Balance balance;
 
@@ -20,9 +23,20 @@ public class Point {
         return this;
     }
 
+    public static Point reconstruct(Long id, String userId, BigDecimal balance) {
+        Point point = new Point(UserId.of(userId), Balance.of(balance));
+        point.id = id;
+        return point;
+    }
+
     public static Point of(String userId, BigDecimal amount) {
         return new Point(UserId.of(userId), Balance.of(amount));
     }
 
-
+    public void deduct(Balance amount) {
+        if (!this.balance.isGreaterThanOrEqual(amount)) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "포인트가 부족합니다.");
+        }
+        this.balance = this.balance.subtract(amount);
+    }
 }

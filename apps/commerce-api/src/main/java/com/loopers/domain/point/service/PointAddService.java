@@ -1,4 +1,4 @@
-package com.loopers.domain.point.model.service;
+package com.loopers.domain.point.service;
 
 import com.loopers.application.point.AddPointCommand;
 import com.loopers.interfaces.api.point.PointResponse;

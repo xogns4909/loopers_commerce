@@ -22,7 +22,7 @@ public class PointController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PointResponse>> findPoint(HttpServletRequest request) {
-        String userId = UserCertifyUtil.extractUserId(request);
+        String userId = UserCertifyUtil.extractUserId(request.getHeader( "X-USER-ID"));
         PointResponse response = pointFacade.findPointInfo(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -31,7 +31,7 @@ public class PointController {
     public ResponseEntity<ApiResponse<PointResponse>> chargePoint(@RequestBody PointChargeRequest chargeRequest,
         HttpServletRequest servletRequest
     ) {
-        UserCertifyUtil.extractUserId(servletRequest);
+        UserCertifyUtil.extractUserId(servletRequest.getHeader( "X-USER-ID"));
         PointResponse response = pointFacade.chargePoint(chargeRequest);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
