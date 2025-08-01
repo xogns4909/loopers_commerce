@@ -1,4 +1,4 @@
-package com.loopers.domain.payment;
+package com.loopers.domain.payment.model;
 
 import com.loopers.domain.order.model.Order;
 import com.loopers.domain.user.model.UserId;
@@ -8,20 +8,20 @@ import lombok.Getter;
 
 @Getter
 public class Payment {
+
+    private final Long id;
     private final Long orderId;
     private final UserId userId;
     private final PaymentAmount amount;
     private final PaymentMethod method;
-    private PaymentStatus status;
 
-    private Payment(Long orderId, UserId userId, PaymentAmount amount, PaymentMethod method) {
+    private Payment(Long id, Long orderId, UserId userId, PaymentAmount amount, PaymentMethod method) {
         validationValue(orderId, userId, amount, method);
-
+        this.id = id;
         this.orderId = orderId;
         this.userId = userId;
         this.amount = amount;
         this.method = method;
-        this.status = PaymentStatus.SUCCESS;
     }
 
     private static void validationValue(Long orderId, UserId userId, PaymentAmount amount, PaymentMethod method) {
@@ -39,14 +39,30 @@ public class Payment {
         }
     }
 
-    public static Payment complete(Order order, PaymentMethod method) {
-        if (order.getId() == null) {
+    public static Payment complete(Long orderId, UserId userId, PaymentAmount amount, PaymentMethod method) {
+        if (orderId == null) {
             throw new CoreException(ErrorType.BAD_REQUEST, "주문 ID가 지정되지 않았습니다.");
         }
-        return new Payment(order.getId(), order.getUserId(), PaymentAmount.from(order), method);
+        return new Payment(
+            null,
+            orderId,
+            userId,
+            amount,
+            method
+        );
     }
 
-    public void fail() {
-        this.status = PaymentStatus.FAILED;
+    public static Payment reconstruct(Long id, UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
+        return new Payment(id, orderId, userId, amount, method);
+    }
+
+    public static Payment create(UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
+        return new Payment(
+            null,
+            orderId,
+            userId,
+            amount,
+            method
+        );
     }
 }
