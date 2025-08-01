@@ -31,4 +31,16 @@ public record Product(Long id,String name, String description, Price price, Prod
             throw new CoreException(ErrorType.STOCK_SHORTAGE);
         }
     }
+
+    public void deductStock(int quantity) {
+        new Product(
+            this.id,
+            this.name,
+            this.description,
+            this.price,
+            this.productStatus,
+            this.stock.minus(quantity),
+            this.brandId
+        );
+    }
 }
