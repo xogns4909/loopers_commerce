@@ -17,6 +17,7 @@ import com.loopers.infrastructure.user.entity.UserEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
 import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -121,6 +124,66 @@ class OrderE2ETest {
         assertThat(body).isNotNull();
         assertThat(body.data().status().name()).isEqualTo("COMPLETED");
         assertThat(body.data().amount()).isEqualTo(BigDecimal.valueOf(20000));
+    }
+
+
+    @Test
+    @DisplayName("주문 상세 조회 성공")
+    void getOrderDetail_success() {
+        // given: 주문 먼저 넣기
+        ResponseEntity<ApiResponse<OrderResponse>> orderResponse = createOrder();
+
+        Long orderId = orderResponse.getBody().data().orderId();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-USER-ID", userId);
+
+        HttpEntity<Void> httpEntity = new HttpEntity<>(headers);
+
+        // when
+        ResponseEntity<ApiResponse<OrderDetailResponse>> response = restTemplate.exchange(
+            "/api/v1/orders/" + orderId,
+            HttpMethod.GET,
+            httpEntity,
+            new ParameterizedTypeReference<>() {}
+        );
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        OrderDetailResponse detail = response.getBody().data();
+        assertThat(detail).isNotNull();
+        assertThat(detail.orderId()).isEqualTo(orderId);
+        assertThat(detail.items()).hasSize(1);
+        assertThat(detail.items().get(0).productName()).isEqualTo("감성 테스트 상품");
+    }
+
+    // 기존 order_success()를 유틸처럼 쓸 수 있도록 변경
+    private ResponseEntity<ApiResponse<OrderResponse>> createOrder() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-USER-ID", userId);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String requestJson = """
+        {
+          "paymentMethod": "POINT",
+          "items": [
+            {
+              "productId": %d,
+              "quantity": 2,
+              "price": 10000
+            }
+          ]
+        }
+        """.formatted(productId);
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(requestJson, headers);
+
+        return restTemplate.exchange(
+            "/api/v1/orders",
+            HttpMethod.POST,
+            httpEntity,
+            new ParameterizedTypeReference<>() {}
+        );
     }
 
 }

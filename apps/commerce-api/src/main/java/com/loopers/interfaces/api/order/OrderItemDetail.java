@@ -4,5 +4,5 @@ public record OrderItemDetail(
     Long productId,
     String productName,
     int quantity,
-    int price
+    Long price
 ) {}
