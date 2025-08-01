@@ -7,6 +7,7 @@ import com.loopers.domain.order.model.OrderStatus;
 import com.loopers.interfaces.api.order.OrderDetailResponse;
 import com.loopers.interfaces.api.order.OrderItemDetail;
 import com.loopers.interfaces.api.order.OrderSummaryResponse;
+import java.time.ZonedDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,19 +40,22 @@ class OrderServiceTest {
         OrderSearchCommand command = new OrderSearchCommand(userId, pageable);
 
         List<OrderSummaryResponse> data = List.of(
-            new OrderSummaryResponse(1L, BigDecimal.valueOf(10000), "COMPLETED", LocalDateTime.now())
+            new OrderSummaryResponse(1L, 10000L, OrderStatus.COMPLETED, ZonedDateTime.now())
         );
 
         given(orderRepository.findOrderSummariesByUserId(eq(userId), eq(pageable)))
             .willReturn(new PageImpl<>(data, pageable, 1));
 
+
         // when
         Page<OrderSummaryResponse> result = orderService.getUserOrders(command);
+
+        System.out.println(result);
 
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getContent().get(0).orderId()).isEqualTo(1L);
-        assertThat(result.getContent().get(0).status()).isEqualTo(OrderStatus.COMPLETED.name());
+        assertThat(result.getContent().get(0).status()).isEqualTo(OrderStatus.COMPLETED);
     }
 
     @Test
@@ -63,7 +67,7 @@ class OrderServiceTest {
         OrderDetailCommand command = new OrderDetailCommand(userId, orderId);
 
         List<OrderItemDetail> items = List.of(
-            new OrderItemDetail(100L, "상품A", 2, 5000)
+            new OrderItemDetail(100L, "상품A", 2, 5000L)
         );
 
         OrderDetailResponse response = new OrderDetailResponse(
