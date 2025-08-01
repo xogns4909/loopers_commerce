@@ -96,6 +96,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public boolean existsById(Long productId) {
+        return jpaProductRepository.existsById(productId);
+    }
+
+    @Override
     public void save(Product product) {
         jpaProductRepository.save(ProductEntity.from(product));
     }

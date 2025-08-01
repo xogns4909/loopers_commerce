@@ -23,7 +23,7 @@ class LikeTest {
 
         // then
         assertThat(like).isNotNull();
-        assertThat(like.userId()).isEqualTo(userId);
+        assertThat(like.userId().value()).isEqualTo(userId);
         assertThat(like.productId()).isEqualTo(productId);
     }
 

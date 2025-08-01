@@ -14,6 +14,8 @@ public interface ProductRepository {
 
     Optional<ProductInfo> findProductInfoById(Long id);
 
+    boolean existsById(Long productId);
+
     void save(Product product);
 
 }
