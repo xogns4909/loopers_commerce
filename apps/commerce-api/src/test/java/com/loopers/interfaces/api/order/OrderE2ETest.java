@@ -3,7 +3,7 @@ package com.loopers.interfaces.api.order;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.loopers.application.point.AddPointCommand;
-import com.loopers.application.point.PointAddServiceImpl;
+import com.loopers.application.point.PointServiceImpl;
 import com.loopers.domain.product.model.Product;
 import com.loopers.domain.product.model.ProductStatus;
 import com.loopers.domain.user.model.User;
@@ -17,7 +17,6 @@ import com.loopers.infrastructure.user.entity.UserEntity;
 import com.loopers.interfaces.api.ApiResponse;
 import com.loopers.utils.DatabaseCleanUp;
 import java.math.BigDecimal;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,8 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -53,10 +50,7 @@ class OrderE2ETest {
     JPAProductRepository productRepository;
 
     @Autowired
-    JpaPointRepository pointRepository;
-
-    @Autowired
-    PointAddServiceImpl pointAddService;
+    PointServiceImpl pointService;
 
     private final String userId = "testUser1";
     private Long productId;
@@ -69,7 +63,7 @@ class OrderE2ETest {
         User user = User.of(userId, "test@sample.com", "M", "1990-01-01");
         userRepository.save(UserEntity.fromDomain(user));
 
-        pointAddService.charge(new AddPointCommand(userId,BigDecimal.valueOf(1000000000)));
+        pointService.charge(new AddPointCommand(userId,BigDecimal.valueOf(1000000000)));
 
         BrandEntity brand = new BrandEntity("감성브랜드");
         brandRepository.save(brand);
