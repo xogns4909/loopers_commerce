@@ -1,6 +1,6 @@
 package com.loopers.application.point;
 
-import com.loopers.domain.point.model.service.PointAddService;
+import com.loopers.domain.point.service.PointAddService;
 import com.loopers.domain.point.service.PointFindService;
 import com.loopers.interfaces.api.point.PointChargeRequest;
 import com.loopers.interfaces.api.point.PointResponse;
