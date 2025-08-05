@@ -1,6 +1,7 @@
 package com.loopers.application.order;
 
 
+import com.loopers.domain.order.OrderRequestHistoryService;
 import com.loopers.domain.payment.PaymentService;
 import com.loopers.domain.order.OrderService;
 import com.loopers.domain.order.model.Order;
@@ -21,21 +22,26 @@ public class OrderFacade {
     private final OrderService orderService;
     private final PaymentService paymentService;
     private final ProductService productService;
+    private final OrderRequestHistoryService orderRequestHistoryService;
 
     @Transactional
     public OrderResponse order(OrderCommand command) {
-
         productService.checkAndDeduct(command.items());
 
         Order order = orderService.createOrder(command.userId(), command.items());
+        orderRequestHistoryService.savePending(command.idempotencyKey(), command.userId().value(), order.getId());
 
+        paymentService.pay(new PaymentCommand(
+            command.userId(),
+            order.getId(),
+            order.getAmount(),
+            command.paymentMethod()
+        ));
 
-        paymentService.pay(new PaymentCommand(command.userId(), order.getId(), order.getAmount(), command.paymentMethod()));
+        orderService.completeOrder(order);
+        orderRequestHistoryService.markSuccess(command.idempotencyKey());
 
-        order.complete();
-        orderService.save(order);
-
-        return new OrderResponse(order.getId(), order.getAmount().value(),order.getStatus());
+        return new OrderResponse(order.getId(), order.getAmount().value(), order.getStatus());
     }
 
     public Page<OrderSummaryResponse> getUserOrders(OrderSearchCommand command) {
@@ -46,4 +52,5 @@ public class OrderFacade {
         return orderService.getOrderDetail(command);
     }
 }
+
 

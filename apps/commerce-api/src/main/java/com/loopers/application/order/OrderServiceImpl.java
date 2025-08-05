@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
-
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -23,7 +22,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
-
+    @Override
     @Transactional
     public Order createOrder(UserId userId, List<OrderItemCommand> items) {
         List<OrderItem> orderItems = items.stream()
@@ -37,6 +36,11 @@ public class OrderServiceImpl implements OrderService {
         return savedOrder;
     }
 
+    @Override
+    public void completeOrder(Order order) {
+        order.complete();
+        orderRepository.save(order);
+    }
 
     @Override
     public Order save(Order order) {
@@ -53,3 +57,4 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findOrderDetailByUserIdAndOrderId(command.userId(), command.orderId());
     }
 }
+

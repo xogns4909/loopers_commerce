@@ -26,11 +26,12 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> placeOrder(
         @RequestHeader("X-USER-ID") String userId,
+        @RequestHeader("X-IDEMPOTENCY-KEY") String idempotencyKey,
         @RequestBody OrderRequest request
     ) {
 
         UserCertifyUtil.extractUserId(userId);
-        OrderCommand command = request.toCommand(userId);
+        OrderCommand command = request.toCommand(userId,idempotencyKey);
         OrderResponse response = orderFacade.order(command);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
