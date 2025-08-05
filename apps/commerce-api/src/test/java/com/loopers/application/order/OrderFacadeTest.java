@@ -11,12 +11,14 @@ import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.model.Price;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.interfaces.api.order.OrderResponse;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.List;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -69,5 +71,46 @@ class OrderFacadeTest {
         assertThat(response.orderId()).isEqualTo(order.getId());
         assertThat(response.amount()).isEqualTo(order.getAmount().value());
         assertThat(response.status()).isEqualTo(order.getStatus());
+    }
+
+
+    @Test
+    @DisplayName("멱등키가 이미 존재하면 기존 주문을 반환한다")
+    void order_whenIdempotentKeyExists_returnExistingOrder() {
+        // given
+        UserId userId = UserId.of("kth4909");
+        Long existingOrderId = 99L;
+        Order existingOrder = Order.create(userId, List.of(
+            new OrderItem(1L, 2, Price.of(BigDecimal.valueOf(10000)))
+        ));
+
+
+        ReflectionTestUtils.setField(existingOrder, "id", existingOrderId);
+        existingOrder.complete();
+
+
+        when(orderRequestHistoryService.findOrderIdByIdempotencyKey("idemp-001")).thenReturn(Optional.of(existingOrderId));
+        when(orderService.getOrder(existingOrderId)).thenReturn(existingOrder);
+
+        // when
+        OrderCommand command = new OrderCommand(
+            userId,
+            List.of(new OrderCommand.OrderItemCommand(1L, 2, Price.of(BigDecimal.valueOf(10000)), "idemp-001")),
+            PaymentMethod.POINT,
+            Price.of(BigDecimal.valueOf(20000)),
+            "idemp-001"
+        );
+
+        OrderResponse response = orderFacade.order(command);
+
+        // then
+        assertThat(response.orderId()).isEqualTo(existingOrderId);
+        assertThat(response.amount()).isEqualTo(BigDecimal.valueOf(20000));
+        assertThat(response.status().name()).isEqualTo("COMPLETED");
+
+
+        verify(orderService, never()).createOrder(any(), any());
+        verify(paymentService, never()).pay(any());
+        verify(orderService, never()).completeOrder(any());
     }
 }

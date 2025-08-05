@@ -21,4 +21,6 @@ public interface OrderService {
     OrderDetailResponse getOrderDetail(OrderDetailCommand command);
 
     void completeOrder(Order order);
+
+    Order getOrder(Long orderId);
 }

@@ -13,12 +13,12 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
 
         private final JpaOrderItemRepository jpaOrderItemRepository;
 
+
     @Override
     public void saveAll(List<OrderItem> items, Long orderId) {
         List<OrderItemEntity> entities = items.stream()
             .map(item -> OrderItemEntity.from(item, orderId))
             .toList();
-
         jpaOrderItemRepository.saveAll(entities);
     }
 }

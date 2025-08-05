@@ -11,6 +11,7 @@ import com.loopers.interfaces.api.order.OrderResponse;
 import com.loopers.interfaces.api.order.OrderSummaryResponse;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,15 @@ public class OrderFacade {
 
     @Transactional
     public OrderResponse order(OrderCommand command) {
+
+        Optional<Long> existingOrderId = orderRequestHistoryService.findOrderIdByIdempotencyKey(command.idempotencyKey());
+
+        if (existingOrderId.isPresent()) {
+            Order existingOrder = orderService.getOrder(existingOrderId.get());
+            return new OrderResponse(existingOrder.getId(), existingOrder.getAmount().value(), existingOrder.getStatus());
+        }
+
+
         productService.checkAndDeduct(command.items());
 
         Order order = orderService.createOrder(command.userId(), command.items());
