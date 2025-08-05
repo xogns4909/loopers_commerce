@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -67,12 +68,8 @@ public class OrderRepositoryImpl implements OrderRepository {
             .where(order.userId.eq(userId), order.id.eq(orderId))
             .fetchOne();
 
-        if (orderEntity == null) {
-            return null;
-        }
+        if (orderEntity == null) return null;
 
-
-        QOrderItemEntity orderItem = QOrderItemEntity.orderItemEntity;
         QProductEntity product = QProductEntity.productEntity;
 
         List<OrderItemDetail> items = queryFactory
@@ -94,5 +91,10 @@ public class OrderRepositoryImpl implements OrderRepository {
             orderEntity.getStatus(),
             items
         );
+    }
+
+    @Override
+    public Optional<Order> findById(Long orderId) {
+        return jpaOrderRepository.findById(orderId).map(OrderEntity::toModel);
     }
 }

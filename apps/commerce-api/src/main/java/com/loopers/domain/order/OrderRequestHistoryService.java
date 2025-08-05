@@ -1,5 +1,7 @@
 package com.loopers.domain.order;
 
+import java.util.Optional;
+
 public interface OrderRequestHistoryService {
 
     void savePending(String idempotencyKey, String userId, Long orderId);
@@ -7,5 +9,7 @@ public interface OrderRequestHistoryService {
     void markSuccess(String idempotencyKey);
 
     void markFailure(String idempotencyKey);
+
+    Optional<Long> findOrderIdByIdempotencyKey(String idempotencyKey);
 
 }

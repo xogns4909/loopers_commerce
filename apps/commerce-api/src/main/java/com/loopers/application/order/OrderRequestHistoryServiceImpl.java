@@ -5,6 +5,7 @@ import com.loopers.domain.order.OrderRequestHistoryService;
 import com.loopers.domain.order.model.OrderRequestHistory;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,12 @@ public class OrderRequestHistoryServiceImpl implements OrderRequestHistoryServic
     public void markFailure(String idempotencyKey) {
         OrderRequestHistory history = findOrThrow(idempotencyKey);
         repository.save(history.markFailure());
+    }
+
+    @Override
+    public Optional<Long> findOrderIdByIdempotencyKey(String idempotencyKey) {
+        return repository.findByIdempotencyKey(idempotencyKey)
+            .map(OrderRequestHistory::orderId);
     }
 
     private OrderRequestHistory findOrThrow(String idempotencyKey) {
