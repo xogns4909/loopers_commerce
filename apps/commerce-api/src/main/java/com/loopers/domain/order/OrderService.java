@@ -19,4 +19,6 @@ public interface OrderService {
     Page<OrderSummaryResponse> getUserOrders(OrderSearchCommand command);
 
     OrderDetailResponse getOrderDetail(OrderDetailCommand command);
+
+    void completeOrder(Order order);
 }

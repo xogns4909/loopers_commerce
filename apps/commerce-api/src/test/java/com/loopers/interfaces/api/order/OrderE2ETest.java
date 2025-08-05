@@ -87,6 +87,7 @@ class OrderE2ETest {
     void order_success() {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-USER-ID", userId);
+        headers.set("X-IDEMPOTENCY-KEY", "test-idempotency-key-001");
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         String requestJson = """
@@ -131,7 +132,6 @@ class OrderE2ETest {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-USER-ID", userId);
-
         HttpEntity<Void> httpEntity = new HttpEntity<>(headers);
 
         // when
@@ -151,10 +151,11 @@ class OrderE2ETest {
         assertThat(detail.items().get(0).productName()).isEqualTo("감성 테스트 상품");
     }
 
-    // 기존 order_success()를 유틸처럼 쓸 수 있도록 변경
+
     private ResponseEntity<ApiResponse<OrderResponse>> createOrder() {
         HttpHeaders headers = new HttpHeaders();
         headers.set("X-USER-ID", userId);
+        headers.set("X-IDEMPOTENCY-KEY", "test-key-123");
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         String requestJson = """

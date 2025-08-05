@@ -1,7 +1,7 @@
-package com.loopers.domain.order;
+package com.loopers.infrastructure.order;
 
+import com.loopers.domain.order.OrderItemRepository;
 import com.loopers.domain.order.model.OrderItem;
-import com.loopers.infrastructure.order.JpaOrderItemRepository;
 import com.loopers.infrastructure.order.entity.OrderItemEntity;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

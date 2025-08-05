@@ -1,8 +1,9 @@
 package com.loopers.application.order;
 
+import com.loopers.domain.order.OrderRequestHistoryService;
 import com.loopers.domain.order.OrderService;
 import com.loopers.domain.order.model.Order;
-import com.loopers.domain.order.model.OrderAmount;
+import com.loopers.domain.order.model.OrderItem;
 import com.loopers.domain.order.model.OrderStatus;
 import com.loopers.domain.payment.PaymentService;
 import com.loopers.domain.payment.model.PaymentMethod;
@@ -25,34 +26,34 @@ class OrderFacadeTest {
     private OrderService orderService = mock(OrderService.class);
     private PaymentService paymentService = mock(PaymentService.class);
     private ProductService productService = mock(ProductService.class);
+    private OrderRequestHistoryService orderRequestHistoryService = mock(OrderRequestHistoryService.class);
     private OrderFacade orderFacade;
 
     @BeforeEach
     void setUp() {
-        orderFacade = new OrderFacade(orderService, paymentService, productService);
+        orderFacade = new OrderFacade(orderService, paymentService, productService, orderRequestHistoryService);
     }
 
     @Test
-    @DisplayName("주문 및 결제 성공 -")
+    @DisplayName("주문 및 결제 성공")
     void order_success_Test() {
         // given
         UserId userId = UserId.of("kth4909");
-        Long orderId = 1L;
         Price itemPrice = Price.of(BigDecimal.valueOf(500));
-        OrderAmount amount = new OrderAmount(BigDecimal.valueOf(1000));
         PaymentMethod method = PaymentMethod.POINT;
 
         List<OrderCommand.OrderItemCommand> items = List.of(
-            new OrderCommand.OrderItemCommand(1L, 2, itemPrice)
+            new OrderCommand.OrderItemCommand(1L, 2, itemPrice, "123")
         );
 
-        OrderCommand command = new OrderCommand(userId, items, method, itemPrice);
-        Order order = mock(Order.class);
+        OrderCommand command = new OrderCommand(userId, items, method, itemPrice, "123");
 
+        // 실제 도메인 객체 생성
+        List<OrderItem> orderItems = List.of(new OrderItem(1L, 2, itemPrice));
+        Order order = Order.create(userId, orderItems);
+
+        // stubbing
         when(orderService.createOrder(userId, items)).thenReturn(order);
-        when(order.getId()).thenReturn(orderId);
-        when(order.getAmount()).thenReturn(amount);
-        when(order.getStatus()).thenReturn(OrderStatus.COMPLETED);
 
         // when
         OrderResponse response = orderFacade.order(command);
@@ -61,11 +62,12 @@ class OrderFacadeTest {
         verify(productService).checkAndDeduct(items);
         verify(orderService).createOrder(userId, items);
         verify(paymentService).pay(any());
-        verify(order).complete();
-        verify(orderService).save(order);
+        verify(orderService).completeOrder(order);
+        verify(orderRequestHistoryService).savePending("123", userId.value(), order.getId());
+        verify(orderRequestHistoryService).markSuccess("123");
 
-        assertThat(response.orderId()).isEqualTo(orderId);
-        assertThat(response.amount()).isEqualTo(amount.value());
-        assertThat(response.status()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(response.orderId()).isEqualTo(order.getId());
+        assertThat(response.amount()).isEqualTo(order.getAmount().value());
+        assertThat(response.status()).isEqualTo(order.getStatus());
     }
 }
