@@ -1,5 +1,6 @@
 package com.loopers.domain.order.model;
 
+import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -24,15 +25,15 @@ public class Order {
         this.status = status;
     }
 
-    public static Order create(UserId userId, List<OrderItem> items) {
+    public static Order create(UserId userId, List<OrderItem> items, UserCoupon coupon) {
         validate(userId, items);
-        return new Order(
-            null,
-            userId,
-            items,
-            OrderAmount.from(items),
-            OrderStatus.PENDING
-        );
+
+        OrderAmount originalAmount = OrderAmount.from(items);
+        OrderAmount finalAmount = (coupon != null)
+            ? OrderAmount.of(coupon.apply(originalAmount.value()))
+            : originalAmount;
+
+        return new Order(null, userId, items, finalAmount, OrderStatus.PENDING);
     }
 
     public static Order reconstruct(Long id, UserId userId, List<OrderItem> items, OrderStatus status, OrderAmount amount) {

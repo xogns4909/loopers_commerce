@@ -12,7 +12,8 @@ public record OrderCommand(
     List<OrderItemCommand> items,
     PaymentMethod paymentMethod,
     Price price,
-    String idempotencyKey
+    String idempotencyKey,
+    Long couponId
 ) {
-    public record OrderItemCommand(Long productId, int quantity, Price price,String idempotencyKey) {}
+    public record OrderItemCommand(Long productId, int quantity, Price price,String idempotencyKey,Long couponId) {}
 }

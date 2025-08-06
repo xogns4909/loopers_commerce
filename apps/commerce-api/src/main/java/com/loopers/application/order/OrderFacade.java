@@ -1,6 +1,8 @@
 package com.loopers.application.order;
 
 
+import com.loopers.domain.discount.CouponService;
+import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.order.OrderRequestHistoryService;
 import com.loopers.domain.payment.PaymentService;
 import com.loopers.domain.order.OrderService;
@@ -23,6 +25,7 @@ public class OrderFacade {
     private final OrderService orderService;
     private final PaymentService paymentService;
     private final ProductService productService;
+    private final CouponService couponService;
     private final OrderRequestHistoryService orderRequestHistoryService;
 
     @Transactional
@@ -38,8 +41,15 @@ public class OrderFacade {
 
         productService.checkAndDeduct(command.items());
 
-        Order order = orderService.createOrder(command.userId(), command.items());
+        UserCoupon coupon = (command.couponId() != null)
+            ? couponService.getCouponByUserId(command.couponId(), command.userId().value())
+            : null;
+
+
+        Order order = orderService.createOrder(command.userId(), command.items(), coupon);
         orderRequestHistoryService.savePending(command.idempotencyKey(), command.userId().value(), order.getId());
+
+
 
         paymentService.pay(new PaymentCommand(
             command.userId(),
