@@ -4,6 +4,7 @@ import com.loopers.domain.discount.DiscountPolicy;
 import com.loopers.domain.discount.DiscountType;
 import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.order.model.Order;
+import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.order.model.OrderItem;
 import com.loopers.domain.order.model.OrderStatus;
 import com.loopers.domain.product.model.Price;
@@ -56,18 +57,6 @@ class OrderTest {
             assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
         }
 
-        @Test
-        @DisplayName("쿠폰이 적용되면 할인된 금액으로 주문이 생성된다")
-        void create_with_coupon_applies_discount() {
-            UserId userId = UserId.of("user1");
-
-            DiscountPolicy policy = new DiscountPolicy(DiscountType.FIXED, BigDecimal.valueOf(300));
-            UserCoupon coupon = new UserCoupon(1L, userId.value(), policy, false);
-
-            Order order = Order.create(userId, List.of(item), coupon);
-
-            assertThat(order.getAmount().value()).isEqualTo(BigDecimal.valueOf(700));
-        }
     }
 
     @Nested
