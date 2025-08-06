@@ -5,6 +5,7 @@ import com.loopers.application.order.OrderDetailCommand;
 import com.loopers.application.order.OrderSearchCommand;
 import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.order.model.Order;
+import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.interfaces.api.order.OrderDetailResponse;
 import com.loopers.interfaces.api.order.OrderSummaryResponse;
@@ -21,7 +22,7 @@ public interface OrderService {
     OrderDetailResponse getOrderDetail(OrderDetailCommand command);
 
 
-    Order createOrder(UserId userId, List<OrderItemCommand> items, UserCoupon coupon);
+    Order createOrder(UserId userId, List<OrderItemCommand> items, OrderAmount orderAmount);
 
     void completeOrder(Order order);
 

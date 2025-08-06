@@ -5,7 +5,9 @@ import com.loopers.domain.discount.CouponService;
 import com.loopers.domain.order.OrderRequestHistoryService;
 import com.loopers.domain.order.OrderService;
 import com.loopers.domain.order.model.Order;
+import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.order.model.OrderItem;
+import com.loopers.domain.order.model.OrderStatus;
 import com.loopers.domain.payment.PaymentService;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.product.ProductService;
@@ -28,14 +30,13 @@ class OrderFacadeTest {
 
     private OrderService orderService = mock(OrderService.class);
     private PaymentService paymentService = mock(PaymentService.class);
-    private ProductService productService = mock(ProductService.class);
-    private CouponService couponService = mock(CouponService.class);
+    private OrderProcessor orderProcessor = mock(OrderProcessor.class);
     private OrderRequestHistoryService orderRequestHistoryService = mock(OrderRequestHistoryService.class);
     private OrderFacade orderFacade;
 
     @BeforeEach
     void setUp() {
-        orderFacade = new OrderFacade(orderService, paymentService, productService, couponService, orderRequestHistoryService);
+        orderFacade = new OrderFacade(paymentService,orderService,orderRequestHistoryService,orderProcessor);
     }
 
     @Test
@@ -51,29 +52,32 @@ class OrderFacadeTest {
         );
 
         OrderCommand command = new OrderCommand(userId, items, method, itemPrice, "123", 1L);
-
+        OrderAmount orderAmount = OrderAmount.of(BigDecimal.valueOf(500));
         List<OrderItem> orderItems = List.of(new OrderItem(1L, 2, itemPrice));
-        Order order = Order.create(userId, orderItems, null);
+        Order order = Order.create(userId, orderItems, orderAmount);
+        ReflectionTestUtils.setField(order, "id", 1L);
+        OrderResponse fakeResponse = new OrderResponse(order.getId(), order.getAmount().value(), OrderStatus.COMPLETED);
 
         // stubbing
         when(orderService.createOrder(userId, items, null)).thenReturn(order);
         when(orderRequestHistoryService.findOrderIdByIdempotencyKey("123")).thenReturn(Optional.empty());
+        when(orderProcessor.process(command)).thenReturn(order);
+        when(orderProcessor.completeOrder(order, command.idempotencyKey())).thenReturn(fakeResponse);
+
 
         // when
         OrderResponse response = orderFacade.order(command);
+        when(orderProcessor.process(command)).thenReturn(order);
 
         // then
-        verify(productService).checkAndDeduct(items);
-        verify(orderService).createOrder(userId, items, null);
+        verify(orderProcessor).process(command);
         verify(paymentService).pay(any());
-        verify(orderService).completeOrder(order);
-        verify(orderRequestHistoryService).savePending("123", userId.value(), order.getId());
-        verify(orderRequestHistoryService).markSuccess("123");
 
-        assertThat(response.orderId()).isEqualTo(order.getId());
+        assertThat(response.orderId()).isEqualTo(1L);
         assertThat(response.amount()).isEqualTo(order.getAmount().value());
-        assertThat(response.status()).isEqualTo(order.getStatus());
+        assertThat(response.status()).isEqualTo(OrderStatus.COMPLETED);
     }
+
 
     @Test
     @DisplayName("멱등키가 이미 존재하면 기존 주문을 반환한다")
@@ -83,7 +87,7 @@ class OrderFacadeTest {
         Long existingOrderId = 99L;
         Order existingOrder = Order.create(userId, List.of(
             new OrderItem(1L, 2, Price.of(BigDecimal.valueOf(10000)))
-        ), null);
+        ), OrderAmount.of(BigDecimal.valueOf(20000)));
 
         ReflectionTestUtils.setField(existingOrder, "id", existingOrderId);
         existingOrder.complete();
@@ -94,7 +98,7 @@ class OrderFacadeTest {
         // when
         OrderCommand command = new OrderCommand(
             userId,
-            List.of(new OrderCommand.OrderItemCommand(1L, 2, Price.of(BigDecimal.valueOf(10000)), "idemp-001",1L)),
+            List.of(new OrderCommand.OrderItemCommand(1L, 2, Price.of(BigDecimal.valueOf(20000)), "idemp-001",1L)),
             PaymentMethod.POINT,
             Price.of(BigDecimal.valueOf(20000)),
             "idemp-001",

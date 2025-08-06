@@ -25,15 +25,10 @@ public class Order {
         this.status = status;
     }
 
-    public static Order create(UserId userId, List<OrderItem> items, UserCoupon coupon) {
+    public static Order create(UserId userId, List<OrderItem> items,OrderAmount orderAmount) {
         validate(userId, items);
 
-        OrderAmount originalAmount = OrderAmount.from(items);
-        OrderAmount finalAmount = (coupon != null)
-            ? OrderAmount.of(coupon.apply(originalAmount.value()))
-            : originalAmount;
-
-        return new Order(null, userId, items, finalAmount, OrderStatus.PENDING);
+        return new Order(null, userId, items, orderAmount, OrderStatus.PENDING);
     }
 
     public static Order reconstruct(Long id, UserId userId, List<OrderItem> items, OrderStatus status, OrderAmount amount) {

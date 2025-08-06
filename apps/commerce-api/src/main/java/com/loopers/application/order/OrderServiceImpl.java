@@ -1,11 +1,11 @@
 package com.loopers.application.order;
 
 import com.loopers.application.order.OrderCommand.OrderItemCommand;
-import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.order.OrderItemRepository;
 import com.loopers.domain.order.OrderRepository;
 import com.loopers.domain.order.OrderService;
 import com.loopers.domain.order.model.Order;
+import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.order.model.OrderItem;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.interfaces.api.order.OrderDetailResponse;
@@ -24,12 +24,12 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public Order createOrder(UserId userId, List<OrderItemCommand> items, UserCoupon coupon) {
+    public Order createOrder(UserId userId, List<OrderItemCommand> items, OrderAmount orderAmount) {
         List<OrderItem> orderItems = items.stream()
             .map(item -> new OrderItem(item.productId(), item.quantity(), item.price()))
             .toList();
 
-        Order order = Order.create(userId, orderItems, coupon);
+        Order order = Order.create(userId, orderItems, orderAmount );
         Order savedOrder = orderRepository.save(order);
         orderItemRepository.saveAll(orderItems, savedOrder.getId());
 
