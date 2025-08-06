@@ -16,6 +16,8 @@ public class OrderRequest {
     private String paymentMethod;
     private Price price;
 
+    private Long couponId;
+
     public OrderRequest() {
     }
 
@@ -30,7 +32,8 @@ public class OrderRequest {
                 i.getProductId(),
                 i.getQuantity(),
                 Price.of(BigDecimal.valueOf(i.getPrice())),
-                idempotencyKey
+                idempotencyKey,
+                couponId
             ))
             .toList();
 
@@ -43,7 +46,8 @@ public class OrderRequest {
             itemCommands,
             PaymentMethod.valueOf(paymentMethod),
             Price.of(total),
-            idempotencyKey
+            idempotencyKey,
+            couponId
         );
     }
 }
