@@ -16,6 +16,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class CouponServiceImplTest {
 
@@ -36,7 +37,7 @@ class CouponServiceImplTest {
         UserId userId = UserId.of("kth4909");
         BigDecimal total = BigDecimal.valueOf(10000);
         UserCoupon coupon = UserCoupon.reconstruct(
-            couponId, userId.value(), "FIXED", BigDecimal.valueOf(2000), false
+            couponId, userId.value(), "FIXED", BigDecimal.valueOf(2000), false,1L
         );
 
         when(userCouponRepository.findByIdAndUserId(couponId, userId.value()))
@@ -47,7 +48,10 @@ class CouponServiceImplTest {
 
         // then
         assertThat(discount).isEqualByComparingTo("8000");
-        verify(userCouponRepository).save(coupon);
+        ArgumentCaptor<UserCoupon> captor = ArgumentCaptor.forClass(UserCoupon.class);
+        verify(userCouponRepository).save(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(couponId);
+        assertThat(captor.getValue().isUsed()).isTrue();
     }
 
     @Test
@@ -78,7 +82,7 @@ class CouponServiceImplTest {
         BigDecimal total = BigDecimal.valueOf(10000);
 
         UserCoupon usedCoupon = UserCoupon.reconstruct(
-            couponId, userId.value(), "FIXED", BigDecimal.valueOf(3000), true
+            couponId, userId.value(), "FIXED", BigDecimal.valueOf(3000), true,1L
         );
 
         when(userCouponRepository.findByIdAndUserId(couponId, userId.value()))

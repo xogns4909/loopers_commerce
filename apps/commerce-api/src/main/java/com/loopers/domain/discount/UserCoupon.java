@@ -13,6 +13,7 @@ public class UserCoupon {
     private final String userId;
     private final DiscountPolicy policy;
     private boolean used;
+    private Long version;
 
 
     public BigDecimal apply(BigDecimal orderTotal) {
@@ -21,16 +22,15 @@ public class UserCoupon {
         return policy.calculate(orderTotal);
     }
 
-    public static UserCoupon reconstruct(Long id, String userId, String discountType, BigDecimal discountValue, boolean used) {
+    public static UserCoupon reconstruct(Long id, String userId, String discountType, BigDecimal discountValue, boolean used,Long version) {
         DiscountPolicy policy = new DiscountPolicy(
             DiscountType.valueOf(discountType),
             discountValue
         );
-        return new UserCoupon(id, userId, policy, used);
+        return new UserCoupon(id, userId, policy, used,version);
     }
 
     public UserCoupon use() {
-        this.used = true;
-        return this;
+        return new UserCoupon(this.id, this.userId, this.policy, true, this.version);
     }
 }
