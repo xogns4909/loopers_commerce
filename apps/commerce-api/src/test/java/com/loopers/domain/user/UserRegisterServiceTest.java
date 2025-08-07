@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.loopers.application.user.RegisterUserCommand;
+import com.loopers.application.user.UserServiceImpl;
 import com.loopers.domain.user.model.User;
-import com.loopers.application.user.UserRegisterServiceImpl;
 import com.loopers.domain.user.repository.UserRepository;
 import com.loopers.application.user.UserResponse;
 import com.loopers.support.error.CoreException;
@@ -25,7 +25,7 @@ public class UserRegisterServiceTest {
     private UserRepository repository;
 
     @InjectMocks
-    private UserRegisterServiceImpl userRegisterService;
+    private UserServiceImpl userRegisterService;
 
 
 

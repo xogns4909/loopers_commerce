@@ -4,7 +4,7 @@ package com.loopers.domain.point;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
-import com.loopers.application.point.PointFindServiceImpl;
+import com.loopers.application.point.PointServiceImpl;
 import com.loopers.domain.point.model.Point;
 import com.loopers.domain.point.repository.PointRepository;
 import java.math.BigDecimal;
@@ -24,7 +24,7 @@ class PointFindServiceTest {
     private PointRepository pointRepository;
 
     @InjectMocks
-    private PointFindServiceImpl pointFindService;
+    private PointServiceImpl pointService;
 
     @Test
     @DisplayName("해당 ID 의 포인트 정보가 존재할 경우, 포인트 객체가 반환된다.")
@@ -37,7 +37,7 @@ class PointFindServiceTest {
             .willReturn(Optional.of(point));
 
         // when
-        Point foundPoint = pointFindService.findByUserId(userId);
+        Point foundPoint = pointService.findByUserId(userId);
 
         // then
         then(foundPoint).isNotNull();
@@ -53,7 +53,7 @@ class PointFindServiceTest {
         given(pointRepository.findByUserId(userId)).willReturn(Optional.empty());
 
         // when
-        Point result = pointFindService.findByUserId(userId);
+        Point result = pointService.findByUserId(userId);
 
         // then
         Assertions.assertThat(result).isNull();

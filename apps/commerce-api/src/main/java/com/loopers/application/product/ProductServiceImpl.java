@@ -5,8 +5,10 @@ import com.loopers.domain.product.ProductRepository;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.model.Product;
 import com.loopers.interfaces.api.product.ProductResponse;
+import com.loopers.support.annotation.HandleConcurrency;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,9 +33,11 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @HandleConcurrency
+    @Transactional
     public void checkAndDeduct(List<OrderItemCommand> items) {
         for (OrderItemCommand item : items) {
-            Product product = productRepository.findById(item.productId())
+            Product product = productRepository.findWithPessimisticLockById(item.productId())
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
 
 
@@ -43,6 +47,7 @@ public class ProductServiceImpl implements ProductService {
             productRepository.save(product);
         }
     }
+
 
     @Override
     public boolean existsProduct(Long productId) {

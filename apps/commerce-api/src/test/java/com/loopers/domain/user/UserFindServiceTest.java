@@ -4,7 +4,7 @@ package com.loopers.domain.user;
 import static org.assertj.core.api.BDDAssertions.then;
 import static org.mockito.BDDMockito.given;
 
-import com.loopers.application.user.UserFindServiceImpl;
+import com.loopers.application.user.UserServiceImpl;
 import com.loopers.domain.user.model.User;
 import com.loopers.domain.user.repository.UserRepository;
 import java.util.Optional;
@@ -23,7 +23,7 @@ public class UserFindServiceTest {
     private UserRepository userRepository;
 
     @InjectMocks
-    private UserFindServiceImpl userFindService;
+    private UserServiceImpl userFindService;
 
     @Test
     @DisplayName("해당 ID 의 회원이 존재할 경우, 회원 정보가 반환된다.")

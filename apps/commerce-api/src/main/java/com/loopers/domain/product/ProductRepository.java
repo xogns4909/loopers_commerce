@@ -17,4 +17,6 @@ public interface ProductRepository {
     void save(Product product);
 
     Optional<Product> findById(Long aLong);
+
+    Optional<Product>  findWithPessimisticLockById(Long productId);
 }

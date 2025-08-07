@@ -16,4 +16,8 @@ public class OrderAmount extends Money {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         return new OrderAmount(total);
     }
+
+    public static OrderAmount of(BigDecimal apply) {
+        return  new OrderAmount(apply);
+    }
 }

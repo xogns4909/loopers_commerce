@@ -6,15 +6,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.loopers.application.point.AddPointCommand;
-import com.loopers.application.point.PointAddServiceImpl;
-import com.loopers.application.point.PointFindServiceImpl;
+import com.loopers.application.point.PointServiceImpl;
 import com.loopers.domain.point.model.Point;
 import com.loopers.domain.point.repository.PointRepository;
-import com.loopers.domain.user.service.UserFindService;
+import com.loopers.domain.user.service.UserService;
 import com.loopers.interfaces.api.point.PointResponse;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import java.math.BigDecimal;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,19 +23,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PointAddServiceTest {
+class PointServiceTest {
 
     @Mock
-    private UserFindService userFindService;
+    private UserService userService;
 
-    @Mock
-    private PointFindServiceImpl pointFindService;
+    @InjectMocks
+    private PointServiceImpl pointService;
 
     @Mock
     private PointRepository pointRepository;
 
-    @InjectMocks
-    private PointAddServiceImpl pointAddService;
 
     @Test
     @DisplayName("포인트 충전을 하면 사용자의 포인트가 변경된다.")
@@ -45,14 +43,14 @@ class PointAddServiceTest {
         BigDecimal chargeAmount = BigDecimal.valueOf(50000);
 
         AddPointCommand command = new AddPointCommand(userId, chargeAmount);
-        given(userFindService.existsByUserId(userId)).willReturn(true);
+        given(userService.existsByUserId(userId)).willReturn(true);
 
         Point point = Point.of(userId, BigDecimal.ZERO);
-        given(pointFindService.findByUserId(userId)).willReturn(point);
+        given(pointRepository.findByUserId(userId)).willReturn(Optional.of(point));
         given(pointRepository.save(any(Point.class))).willAnswer(invocation -> invocation.getArgument(0));
 
         // when
-        PointResponse response = pointAddService.charge(command);
+        PointResponse response = pointService.charge(command);
 
         // then
         assertThat(response.userId()).isEqualTo(userId);
@@ -63,12 +61,12 @@ class PointAddServiceTest {
     @DisplayName("존재하지 않는 유저 ID로 충전 시 예외가 발생한다.")
     void charge_whenUserNotFound_shouldThrowException() {
         // given
-        String userId = "kth4909";
+        String userId = "kth490925424";
         BigDecimal chargeAmount = BigDecimal.valueOf(5000);
-        given(userFindService.existsByUserId(userId)).willReturn(false);
+        given(userService.existsByUserId(userId)).willReturn(false);
 
         // when & then
-        assertThatThrownBy(() -> pointAddService.charge(new AddPointCommand(userId, chargeAmount)))
+        assertThatThrownBy(() -> pointService.charge(new AddPointCommand(userId, chargeAmount)))
             .isInstanceOf(CoreException.class)
             .extracting("errorType")
             .isEqualTo(ErrorType.NOT_FOUND);

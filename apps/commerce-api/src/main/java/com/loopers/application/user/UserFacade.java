@@ -1,8 +1,6 @@
 package com.loopers.application.user;
 
-import com.loopers.domain.user.service.UserFindService;
-import com.loopers.domain.user.service.UserLoginService;
-import com.loopers.domain.user.service.UserRegisterService;
+import com.loopers.domain.user.service.UserService;
 import com.loopers.interfaces.api.user.LoginRequest;
 import com.loopers.interfaces.api.user.RegisterUserRequest;
 import com.loopers.interfaces.api.user.UserInfoRequest;
@@ -16,22 +14,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserFacade {
 
-    private final UserRegisterService userRegisterService;
 
-    private final UserLoginService userLoginService;
 
-    private final UserFindService userFindService;
+    private final UserService userService;
 
     public UserResponse register(RegisterUserRequest userRequest) {
-        return userRegisterService.register(userRequest.toCommand());
+        return userService.register(userRequest.toCommand());
     }
 
     public UserResponse login(LoginRequest loginRequest) {
-        return userLoginService.login(loginRequest.userId());
+        return userService.login(loginRequest.userId());
     }
 
     public UserResponse getUserInfo(UserInfoRequest request) {
-        return Optional.ofNullable(userFindService.findByUserId(request.userId()))
+        return Optional.ofNullable(userService.findByUserId(request.userId()))
             .map(UserResponse::from)
             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "존재하지 않는 유저입니다."));
     }

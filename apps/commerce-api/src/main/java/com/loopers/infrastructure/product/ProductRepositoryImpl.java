@@ -7,7 +7,6 @@ import com.loopers.domain.product.ProductRepository;
 import com.loopers.domain.product.ProductSortType;
 import com.loopers.domain.product.model.Product;
 import com.loopers.infrastructure.brand.Entity.QBrandEntity;
-import com.loopers.infrastructure.brand.JpaBrandRepository;
 import com.loopers.infrastructure.like.entity.QLikeEntity;
 import com.loopers.infrastructure.product.entity.ProductEntity;
 import com.loopers.infrastructure.product.entity.QProductEntity;
@@ -110,6 +109,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     public Optional<Product> findById(Long productId) {
         return jpaProductRepository.findById(productId)
             .map(ProductEntity::toModel);
+    }
+
+    @Override
+    public Optional<Product>  findWithPessimisticLockById(Long productId){
+        return jpaProductRepository.findWithPessimisticLockById(productId).map(ProductEntity::toModel);
     }
 
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {

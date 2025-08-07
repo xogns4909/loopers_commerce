@@ -1,7 +1,6 @@
 package com.loopers.interfaces.api.order;
 
 import com.loopers.application.order.OrderCommand;
-import com.loopers.domain.order.model.OrderItem;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.product.model.Price;
 import com.loopers.domain.user.model.UserId;
@@ -17,6 +16,8 @@ public class OrderRequest {
     private String paymentMethod;
     private Price price;
 
+    private Long couponId;
+
     public OrderRequest() {
     }
 
@@ -25,12 +26,14 @@ public class OrderRequest {
         this.paymentMethod = paymentMethod;
     }
 
-    public OrderCommand toCommand(String userId) {
+    public OrderCommand toCommand(String userId, String idempotencyKey) {
         List<OrderCommand.OrderItemCommand> itemCommands = items.stream()
             .map(i -> new OrderCommand.OrderItemCommand(
                 i.getProductId(),
                 i.getQuantity(),
-                Price.of(BigDecimal.valueOf(i.getPrice()))
+                Price.of(BigDecimal.valueOf(i.getPrice())),
+                idempotencyKey,
+                couponId
             ))
             .toList();
 
@@ -42,7 +45,9 @@ public class OrderRequest {
             UserId.of(userId),
             itemCommands,
             PaymentMethod.valueOf(paymentMethod),
-            Price.of(total)
+            Price.of(total),
+            idempotencyKey,
+            couponId
         );
     }
 }
