@@ -12,6 +12,7 @@ public class Point {
     private Long id;
     private final UserId userId;
     private Balance balance;
+    private Long version;
 
     public Point(UserId userId, Balance initialBalance) {
         this.userId = userId;
@@ -23,14 +24,15 @@ public class Point {
         return this;
     }
 
-    public static Point reconstruct(Long id, String userId, BigDecimal balance) {
-        Point point = new Point(UserId.of(userId), Balance.of(balance));
-        point.id = id;
-        return point;
+    public static Point reconstruct(Long id, String userId, BigDecimal balance, Long version) {
+        Point p = new Point(UserId.of(userId), Balance.of(balance));
+        p.id = id;
+        p.version = version;
+        return p;
     }
 
-    public static Point of(String userId, BigDecimal amount) {
-        return new Point(UserId.of(userId), Balance.of(amount));
+    public static Point of(String userId, BigDecimal balance) {
+        return new Point( UserId.of(userId), Balance.of(balance));
     }
 
     public void deduct(Balance amount) {
