@@ -8,13 +8,13 @@ import org.springframework.stereotype.Component;
 @Component
 public interface UserService {
 
-    public User findByUserId(String userId);
+    User findByUserId(String userId);
 
-    public boolean existsByUserId(String userId);
+    boolean existsByUserId(String userId);
 
-    public UserResponse login(String userId);
+    UserResponse login(String userId);
 
-    public UserResponse register(RegisterUserCommand registerUserCommand);
+    UserResponse register(RegisterUserCommand registerUserCommand);
 
 
 }
