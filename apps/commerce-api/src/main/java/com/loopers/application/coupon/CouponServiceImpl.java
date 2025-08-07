@@ -4,6 +4,7 @@ import com.loopers.domain.discount.CouponService;
 import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.discount.UserCouponRepository;
 import com.loopers.domain.user.model.UserId;
+import com.loopers.support.annotation.HandleConcurrency;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ public class CouponServiceImpl implements CouponService {
     private final UserCouponRepository userCouponRepository;
 
     @Override
+    @HandleConcurrency(message = "쿠폰 사용 요청에 실패했습니다. 다시 시도해주세요")
     public BigDecimal apply(UserId userId, Long couponId, BigDecimal orderTotal) {
         UserCoupon coupon = getCouponByUserId(couponId, userId.value());
 
@@ -27,6 +29,10 @@ public class CouponServiceImpl implements CouponService {
 
         userCouponRepository.save(coupon.use());
         return discountAmount;
+    }
+
+    public UserCoupon saveUserCoupon(UserCoupon userCoupon){
+        return  userCouponRepository.save(userCoupon);
     }
 
     @Override

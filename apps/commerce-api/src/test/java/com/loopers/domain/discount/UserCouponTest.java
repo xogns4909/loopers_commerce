@@ -13,7 +13,7 @@ class UserCouponTest {
     @Test
     @DisplayName("정액 쿠폰 적용 시 금액 차감 후 쿠폰 사용 처리됨")
     void applyFixedDiscountAndMarkUsed() {
-        UserCoupon coupon = UserCoupon.reconstruct(1L, "user123", "FIXED", BigDecimal.valueOf(1000), false);
+        UserCoupon coupon = UserCoupon.reconstruct(1L, "user123", "FIXED", BigDecimal.valueOf(1000), false,1L);
 
         BigDecimal discount = coupon.apply(BigDecimal.valueOf(10000));
 
@@ -24,7 +24,7 @@ class UserCouponTest {
     @Test
     @DisplayName("정률 쿠폰 적용 시 할인율만큼 금액 차감")
     void applyPercentageDiscount() {
-        UserCoupon coupon = UserCoupon.reconstruct(2L, "user123", "PERCENT", BigDecimal.valueOf(10), false);
+        UserCoupon coupon = UserCoupon.reconstruct(2L, "user123", "PERCENT", BigDecimal.valueOf(10), false,1L);
 
         BigDecimal discount = coupon.apply(BigDecimal.valueOf(10000));
 
@@ -34,7 +34,7 @@ class UserCouponTest {
     @Test
     @DisplayName("이미 사용한 쿠폰은 적용 시도 시 CoreException 예외 발생")
     void throwExceptionWhenCouponAlreadyUsed() {
-        UserCoupon coupon = UserCoupon.reconstruct(3L, "user123", "FIXED", BigDecimal.valueOf(1000), true);
+        UserCoupon coupon = UserCoupon.reconstruct(3L, "user123", "FIXED", BigDecimal.valueOf(1000), true,1L);
 
         assertThatThrownBy(() -> coupon.apply(BigDecimal.valueOf(10000)))
             .isInstanceOf(CoreException.class)
