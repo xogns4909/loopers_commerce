@@ -4,12 +4,14 @@ import com.loopers.application.product.ProductInfo;
 import com.loopers.domain.like.LikeService;
 import com.loopers.domain.like.LikeResult;
 import com.loopers.domain.product.ProductService;
+import com.loopers.domain.product.like.ProductLikeService;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.interfaces.api.like.LikeRequest;
 import com.loopers.interfaces.api.like.LikeResponse;
 import com.loopers.interfaces.api.like.LikedProductResponse;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +23,9 @@ public class LikeFacade {
 
     private final LikeService likeService;
     private final ProductService productService;
+    private final ProductLikeService productLikeService;
 
+    @Transactional
     public LikeResponse like(LikeRequest request) {
 
         if(!productService.existsProduct(request.productId())){
@@ -31,6 +35,11 @@ public class LikeFacade {
         LikeCommand command = toCommand(request);
         LikeResult result = likeService.like(command);
 
+
+        if (result == LikeResult.LIKED) {
+            productLikeService.incrementLike(request.productId());
+        }
+
         return switch (result) {
             case LIKED -> LikeResponse.liked(request.productId());
             case ALREADY_LIKED -> LikeResponse.alreadyLiked(request.productId());
@@ -38,9 +47,15 @@ public class LikeFacade {
         };
     }
 
+    @Transactional
     public LikeResponse unlike(LikeRequest request) {
         LikeCommand command = toCommand(request);
         LikeResult result = likeService.unlike(command);
+
+
+        if (result == LikeResult.UNLIKED) {
+            productLikeService.decrementLike(request.productId());
+        }
 
         return switch (result) {
             case UNLIKED -> LikeResponse.unliked(request.productId());
