@@ -8,6 +8,7 @@ import com.loopers.domain.product.ProductSortType;
 import com.loopers.domain.product.model.Product;
 import com.loopers.infrastructure.brand.Entity.QBrandEntity;
 import com.loopers.infrastructure.like.entity.QLikeEntity;
+ import com.loopers.infrastructure.product.like.entity.QProductLikeEntity;
 import com.loopers.infrastructure.product.entity.ProductEntity;
 import com.loopers.infrastructure.product.entity.QProductEntity;
 import com.querydsl.core.types.OrderSpecifier;
@@ -32,7 +33,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private final QProductEntity product = QProductEntity.productEntity;
     private final QBrandEntity brand = QBrandEntity.brandEntity;
-    private final QLikeEntity like = QLikeEntity.likeEntity;
+     private final QProductLikeEntity productLike = QProductLikeEntity.productLikeEntity;
 
     @Override
     public Page<ProductInfo> searchByCondition(ProductSearchCommand command) {
@@ -50,13 +51,12 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.name,
                 brand.name,
                 product.price,
-                like.count().intValue()
+                productLike.likeCount.coalesce(0)
             ))
             .from(product)
             .leftJoin(brand).on(product.brandId.eq(brand.id))
-            .leftJoin(like).on(like.productId.eq(product.id))
+            .leftJoin(productLike).on(productLike.productId.eq(product.id))
             .where(where)
-            .groupBy(product.id, product.name, brand.name, product.price)
             .orderBy(orderSpecifier)
             .offset(command.pageable().getOffset())
             .limit(command.pageable().getPageSize())
@@ -80,10 +80,11 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.name,
                 brand.name,
                 product.price,
-                Expressions.constant(0)
+                productLike.likeCount.coalesce(0)
             ))
             .from(product)
             .leftJoin(brand).on(product.brandId.eq(brand.id))
+            .leftJoin(productLike).on(productLike.productId.eq(product.id))
             .where(product.id.eq(id))
             .fetchOne();
 
@@ -91,7 +92,6 @@ public class ProductRepositoryImpl implements ProductRepository {
             return Optional.empty();
         }
         return Optional.of(info);
-
     }
 
     @Override
@@ -120,7 +120,8 @@ public class ProductRepositoryImpl implements ProductRepository {
         return switch (sortType) {
             case LATEST -> product.createdAt.desc();
             case PRICE_DESC -> product.price.desc();
-            case LIKES_DESC -> like.count().desc();
+            case LIKES_DESC -> productLike.likeCount.desc();
         };
     }
+
 }
