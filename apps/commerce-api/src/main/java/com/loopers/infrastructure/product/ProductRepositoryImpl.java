@@ -117,11 +117,16 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
+        // null이거나 예상하지 못한 값일 때 기본값 사용
+        if (sortType == null) {
+            sortType = ProductSortType.LATEST;
+        }
+
         return switch (sortType) {
             case LATEST -> product.createdAt.desc();
             case PRICE_DESC -> product.price.desc();
             case LIKES_DESC -> productLike.likeCount.desc();
+            default -> product.createdAt.desc(); // 혹시 모를 추가 enum 값 대비
         };
     }
-
 }
