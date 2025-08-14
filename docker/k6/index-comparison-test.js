@@ -78,34 +78,36 @@ export default function() {
   }
   
   const startTime = Date.now();
-  const response = http.get(url, { timeout: '30s' });
+  const response = http.get(url, {timeout: '30s'});
   const duration = response.timings.duration;
-  
+
   // 메트릭 기록
   pageScenario.metric.add(duration);
   sortOption.metric.add(duration);
-  
+
   if (brandId) {
     brandFilterTime.add(duration);
   } else {
     noBrandFilterTime.add(duration);
   }
-  
+
   // 성능 분류
   if (duration > 10000) {
     verySlowQueriesCounter.add(1);
-    console.log(`🐌 VERY SLOW: ${pageScenario.name} page ${page}, ${sortOption.sort}, brand=${brandId} - ${duration}ms`);
+    console.log(
+        `🐌 VERY SLOW: ${pageScenario.name} page ${page}, ${sortOption.sort}, brand=${brandId} - ${duration}ms`);
   } else if (duration > 5000) {
     slowQueriesCounter.add(1);
-    console.log(`⚠️ SLOW: ${pageScenario.name} page ${page}, ${sortOption.sort}, brand=${brandId} - ${duration}ms`);
+    console.log(
+        `⚠️ SLOW: ${pageScenario.name} page ${page}, ${sortOption.sort}, brand=${brandId} - ${duration}ms`);
   }
-  
+
   check(response, {
     [`${pageScenario.name}_page_success`]: (r) => r.status === 200,
     [`${sortOption.sort}_sort_success`]: (r) => r.status === 200,
     'response_under_30s': (r) => r.timings.duration < 30000,
   });
-  
+
   sleep(0.1 + Math.random() * 0.2);
 }
 
