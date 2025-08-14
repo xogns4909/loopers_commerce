@@ -1,0 +1,26 @@
+package com.loopers.infrastructure.cache.redis;
+
+import com.loopers.application.product.VersionClock;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+
+@Component
+public class RedisVersionClock implements VersionClock {
+
+    private final RedisTemplate<String, String> redis;
+
+    public RedisVersionClock(RedisTemplate<String, String> redis) {
+        this.redis = redis;
+    }
+
+    @Override
+    public String current(String ns) {
+        String v = redis.opsForValue().get(ns);
+        return v == null ? "0" : v;
+    }
+
+    @Override
+    public void bump(String ns) {
+        redis.opsForValue().increment(ns);
+    }
+}

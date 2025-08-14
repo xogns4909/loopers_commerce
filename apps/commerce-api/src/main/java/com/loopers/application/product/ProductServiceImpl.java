@@ -4,7 +4,6 @@ import com.loopers.application.order.OrderCommand.OrderItemCommand;
 import com.loopers.domain.product.ProductRepository;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.model.Product;
-import com.loopers.interfaces.api.product.ProductResponse;
 import com.loopers.support.annotation.HandleConcurrency;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -15,7 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service("dbProductService")
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
