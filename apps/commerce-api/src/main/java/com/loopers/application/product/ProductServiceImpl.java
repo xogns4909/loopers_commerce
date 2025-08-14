@@ -14,7 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-@Service("dbProductService")
+@Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 

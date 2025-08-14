@@ -11,6 +11,9 @@ public record ProductResponse(
 ) {
 
     public static ProductResponse from(ProductInfo info) {
+        if (info == null) {
+            return null; // 혹은 예외 던지기
+        }
         return new ProductResponse(
             info.productId(),
             info.productName(),

@@ -1,6 +1,6 @@
-package com.loopers.application.cache;
+package com.loopers.infrastructure.cache.strategy;
 
-
+import com.loopers.infrastructure.cache.core.CachePolicy;
 import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;

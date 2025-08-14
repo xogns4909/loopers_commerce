@@ -2,7 +2,7 @@ package com.loopers.infrastructure.cache.redis.codec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
-import com.loopers.infrastructure.cache.redis.codec.ValueCodec;
+
 
 public class JacksonCodec<V> implements ValueCodec<V> {
 

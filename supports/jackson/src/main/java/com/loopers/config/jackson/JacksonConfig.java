@@ -17,10 +17,9 @@ class JacksonConfig {
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
         return builder -> {
-            // Classpath 내의 모든 Jackson 모듈 자동 등록
+
             builder.findModulesViaServiceLoader(true);
 
-            // Serialization Features
             builder.serializationInclusion(JsonInclude.Include.NON_NULL);
             builder.featuresToEnable(
                 JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT,
@@ -31,7 +30,7 @@ class JacksonConfig {
                 SerializationFeature.FAIL_ON_EMPTY_BEANS
             );
 
-            // Deserialization Features
+
             builder.featuresToEnable(
                 DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,
                 DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,

@@ -1,4 +1,4 @@
-package com.loopers.application.cache;
+package com.loopers.infrastructure.cache.core;
 
 import java.time.Duration;
 
