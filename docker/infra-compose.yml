@@ -13,10 +13,25 @@ services:
       - MYSQL_COLLATE=utf8mb4_general_ci
     volumes:
       - mysql-8-data:/var/lib/mysql
+    networks:
+      - shared-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - shared-network
 
 volumes:
   mysql-8-data:
+  redis-data:
 
 networks:
-  default:
+  shared-network:
+    name: loopers-network
     driver: bridge

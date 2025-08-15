@@ -7,42 +7,44 @@ import com.loopers.domain.product.ProductRepository;
 import com.loopers.domain.product.ProductSortType;
 import com.loopers.domain.product.model.Product;
 import com.loopers.infrastructure.brand.Entity.QBrandEntity;
-import com.loopers.infrastructure.like.entity.QLikeEntity;
 import com.loopers.infrastructure.product.entity.ProductEntity;
 import com.loopers.infrastructure.product.entity.QProductEntity;
+import com.loopers.infrastructure.product.like.entity.QProductLikeEntity;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
 public class ProductRepositoryImpl implements ProductRepository {
 
     private final JPAProductRepository jpaProductRepository;
-
     private final JPAQueryFactory queryFactory;
 
-    private final QProductEntity product = QProductEntity.productEntity;
-    private final QBrandEntity brand = QBrandEntity.brandEntity;
-    private final QLikeEntity like = QLikeEntity.likeEntity;
+    private final QProductEntity product  = QProductEntity.productEntity;
+    private final QBrandEntity   brand  = QBrandEntity.brandEntity;
+    private final QProductLikeEntity productLike = QProductLikeEntity.productLikeEntity;
 
     @Override
-    public Page<ProductInfo> searchByCondition(ProductSearchCommand command) {
+    public Page<ProductInfo> searchByCondition(ProductSearchCommand c) {
         BooleanExpression where = product.deletedAt.isNull();
-
-        if (command.brandId() != null) {
-            where = where.and(product.brandId.eq(command.brandId()));
+        if (c.brandId() != null) {
+            where = where.and(product.brandId.eq(c.brandId()));
         }
 
-        OrderSpecifier<?> orderSpecifier = getOrderSpecifier(command.sortType());
+        ProductSortType sort = (c.sortType() == null) ? ProductSortType.LATEST : c.sortType();
+        OrderSpecifier<?> order = switch (sort) {
+            case LATEST     -> product.createdAt.desc();
+            case PRICE_DESC -> product.price.desc();
+            case LIKES_DESC -> productLike.likeCount.desc();
+        };
 
         List<ProductInfo> content = queryFactory
             .select(new QProductInfo(
@@ -50,16 +52,15 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.name,
                 brand.name,
                 product.price,
-                like.count().intValue()
+                productLike.likeCount.coalesce(0)
             ))
             .from(product)
-            .leftJoin(brand).on(product.brandId.eq(brand.id))
-            .leftJoin(like).on(like.productId.eq(product.id))
+            .join(brand).on(product.brandId.eq(brand.id))
+            .leftJoin(productLike).on(productLike.productId.eq(product.id))
             .where(where)
-            .groupBy(product.id, product.name, brand.name, product.price)
-            .orderBy(orderSpecifier)
-            .offset(command.pageable().getOffset())
-            .limit(command.pageable().getPageSize())
+            .orderBy(order)
+            .offset(c.pageable().getOffset())
+            .limit(c.pageable().getPageSize())
             .fetch();
 
         Long total = queryFactory
@@ -68,9 +69,8 @@ public class ProductRepositoryImpl implements ProductRepository {
             .where(where)
             .fetchOne();
 
-        return new PageImpl<>(content, command.pageable(), total == null ? 0 : total);
+        return new PageImpl<>(content, c.pageable(), total == null ? 0 : total);
     }
-
 
     @Override
     public Optional<ProductInfo> findProductInfoById(Long id) {
@@ -80,18 +80,15 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.name,
                 brand.name,
                 product.price,
-                Expressions.constant(0)
+                productLike.likeCount.coalesce(0)
             ))
             .from(product)
-            .leftJoin(brand).on(product.brandId.eq(brand.id))
-            .where(product.id.eq(id))
+            .join(brand).on(product.brandId.eq(brand.id))
+            .leftJoin(productLike).on(productLike.productId.eq(product.id))
+            .where(product.deletedAt.isNull(), product.id.eq(id))
             .fetchOne();
 
-        if (info == null || info.brandName() == null) {
-            return Optional.empty();
-        }
-        return Optional.of(info);
-
+        return Optional.ofNullable(info);
     }
 
     @Override
@@ -104,23 +101,13 @@ public class ProductRepositoryImpl implements ProductRepository {
         jpaProductRepository.save(ProductEntity.from(product));
     }
 
-
     @Override
     public Optional<Product> findById(Long productId) {
-        return jpaProductRepository.findById(productId)
-            .map(ProductEntity::toModel);
+        return jpaProductRepository.findById(productId).map(ProductEntity::toModel);
     }
 
     @Override
-    public Optional<Product>  findWithPessimisticLockById(Long productId){
+    public Optional<Product> findWithPessimisticLockById(Long productId) {
         return jpaProductRepository.findWithPessimisticLockById(productId).map(ProductEntity::toModel);
-    }
-
-    private OrderSpecifier<?> getOrderSpecifier(ProductSortType sortType) {
-        return switch (sortType) {
-            case LATEST -> product.createdAt.desc();
-            case PRICE_DESC -> product.price.desc();
-            case LIKES_DESC -> like.count().desc();
-        };
     }
 }
