@@ -1,7 +1,7 @@
-package com.loopers.domain.order;
+package com.loopers.infrastructure.order;
 
+import com.loopers.domain.order.OrderItemRepository;
 import com.loopers.domain.order.model.OrderItem;
-import com.loopers.infrastructure.order.JpaOrderItemRepository;
 import com.loopers.infrastructure.order.entity.OrderItemEntity;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +13,12 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
 
         private final JpaOrderItemRepository jpaOrderItemRepository;
 
+
     @Override
     public void saveAll(List<OrderItem> items, Long orderId) {
         List<OrderItemEntity> entities = items.stream()
             .map(item -> OrderItemEntity.from(item, orderId))
             .toList();
-
         jpaOrderItemRepository.saveAll(entities);
     }
 }

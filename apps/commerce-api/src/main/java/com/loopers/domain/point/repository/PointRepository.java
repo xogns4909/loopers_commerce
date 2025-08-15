@@ -7,7 +7,9 @@ import org.springframework.stereotype.Component;
 @Component
 public interface PointRepository {
 
-    public Optional<Point> findByUserId(String UserId);
+    Optional<Point> findByUserId(String UserId);
 
-    public Point save(Point point);
+
+    Point save(Point point);
+
 }
