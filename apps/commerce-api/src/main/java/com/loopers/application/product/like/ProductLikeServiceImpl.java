@@ -6,7 +6,6 @@ import com.loopers.domain.product.like.ProductLikeService;
 import com.loopers.support.annotation.HandleConcurrency;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
