@@ -10,6 +10,10 @@ import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @RequiredArgsConstructor
 @Component
@@ -24,6 +28,7 @@ public class PointPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
+    @Transactional
     public void pay(PaymentCommand command) {
         PaymentAmount amount = PaymentAmount.from(command.amount());
 
@@ -33,13 +38,19 @@ public class PointPaymentStrategy implements PaymentStrategy {
 
         pointService.deduct(command.userId(), amount);
 
-        Payment payment = Payment.create(
-            command.userId(),
-            command.orderId(),
-            amount,
-            command.paymentMethod()
-        );
+        Payment payment = Payment.create(command.userId(), command.orderId(), amount, command.paymentMethod());
 
-        paymentRepository.save(payment);
+
+        String pointTransactionKey = generatePointTransactionKey(command.orderId(), command.userId().value());
+        Payment completedPayment = payment
+            .withTransactionKey(pointTransactionKey)
+            .completePayment("포인트 결제 완료");
+
+        paymentRepository.save(completedPayment);
+    }
+    
+    private String generatePointTransactionKey(Long orderId, String userId) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return String.format("POINT_%s_%s_%s", orderId, userId.substring(0, Math.min(8, userId.length())), timestamp);
     }
 }
