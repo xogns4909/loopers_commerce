@@ -33,4 +33,11 @@ public class UserCoupon {
     public UserCoupon use() {
         return new UserCoupon(this.id, this.userId, this.policy, true, this.version);
     }
+    
+    public UserCoupon release() {
+        if (!used) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "사용되지 않은 쿠폰은 해제할 수 없습니다.");
+        }
+        return new UserCoupon(this.id, this.userId, this.policy, false, this.version);
+    }
 }
