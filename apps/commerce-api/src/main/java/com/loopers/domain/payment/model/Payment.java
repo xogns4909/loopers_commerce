@@ -1,10 +1,14 @@
 package com.loopers.domain.payment.model;
 
+import com.loopers.domain.payment.event.PaymentCompletedEvent;
+import com.loopers.domain.payment.event.PaymentFailedEvent;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.interfaces.api.payment.PaymentCallbackRequest;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.Getter;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 
 import java.math.BigDecimal;
 
@@ -71,11 +75,24 @@ public class Payment {
         return updateStatus(PaymentStatus.FAILED, reason != null ? reason : "결제 실패");
     }
 
-    public Payment processCallback(PaymentCallbackRequest request) {
+    public Payment processCallback(PaymentCallbackRequest request, ApplicationEventPublisher eventPublisher) {
         PaymentStatus newStatus = convertPgStatus(request.status());
         String callbackReason = request.reason() != null ? request.reason() : "PG 콜백 처리";
         
-        return updateStatus(newStatus, callbackReason);
+        Payment updatedPayment = updateStatus(newStatus, callbackReason);
+        
+        // 이벤트 발행
+        if (updatedPayment.isCompleted()) {
+            eventPublisher.publishEvent(PaymentCompletedEvent.of(
+                this.id, this.orderId, this.userId, this.transactionKey
+            ));
+        } else if (updatedPayment.isFailed()) {
+            eventPublisher.publishEvent(PaymentFailedEvent.of(
+                this.id, this.orderId, this.userId, callbackReason, this.transactionKey
+            ));
+        }
+        
+        return updatedPayment;
     }
     
     private PaymentStatus convertPgStatus(String pgStatus) {

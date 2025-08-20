@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
 @Slf4j
 @RequiredArgsConstructor
 @Component
@@ -37,38 +36,30 @@ public class CardPaymentStrategy implements PaymentStrategy {
     @Override
     @Transactional
     public void pay(PaymentCommand command) {
-
         PaymentAmount amount = PaymentAmount.from(command.amount());
         Payment payment = Payment.create(command.userId(), command.orderId(), amount, command.paymentMethod());
         payment = paymentRepository.save(payment);
 
         try {
-
             PgPaymentRequest req = PgPaymentRequest.of(
                 ORDER_ID_PREFIX + command.orderId(),
                 amount.value().longValue(),
                 callbackUrl
             );
 
-            PgPaymentResponse resp = pgClient.requestPayment(command.userId().value(), req).data();
-            payment.getId(), payment.getTransactionKey(), payment.getStatus());
-
+           PgPaymentResponse resp = pgClient.requestPayment(command.userId().value(), req).data();
             String txKey = resp != null ? resp.transactionKey() : null;
 
             if (txKey == null || txKey.isBlank()) {
-
                 Payment failed = payment.failPayment("PG 응답에 transactionKey 누락");
                 paymentRepository.save(failed);
                 throw new CoreException(ErrorType.INTERNAL_ERROR, "PG 응답 오류: txKey 누락");
             }
-
             Payment pending = payment.withTransactionKey(txKey).startProcessing();
             paymentRepository.save(pending);
 
 
         } catch (Exception e) {
-
-            log.error("에러 발생 ", e);
             Payment failed = payment.failPayment("결제 요청 실패: " + e.getMessage());
             paymentRepository.save(failed);
             throw new CoreException(ErrorType.INTERNAL_ERROR, "결제 처리 실패: " + e.getMessage());
