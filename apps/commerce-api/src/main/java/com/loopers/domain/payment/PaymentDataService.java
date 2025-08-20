@@ -1,10 +1,12 @@
 package com.loopers.domain.payment;
 
 import com.loopers.application.order.PaymentCommand;
+import com.loopers.domain.payment.event.PaymentFailedEvent;
 import com.loopers.domain.payment.model.Payment;
 import com.loopers.domain.payment.model.PaymentAmount;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentDataService {
     
     private final PaymentRepository paymentRepository;
+    private final ApplicationEventPublisher eventPublisher;
     
     @Transactional
     public Long createInitiatedPayment(PaymentCommand cmd) {
@@ -33,10 +36,7 @@ public class PaymentDataService {
         paymentRepository.updateToProcessing(paymentId, transactionKey);
         log.info("결제 처리중 상태 업데이트 - paymentId: {}, txKey: {}", paymentId, transactionKey);
     }
-    
-    @Transactional
-    public void updateToFailed(Long paymentId, String reason) {
-        paymentRepository.updateToFailed(paymentId, reason);
-        log.info("결제 실패 상태 업데이트 - paymentId: {}, reason: {}", paymentId, reason);
-    }
+
+
+
 }

@@ -6,7 +6,10 @@ import com.loopers.domain.payment.event.PaymentCompletedEvent;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -22,8 +25,10 @@ public class OrderEventHandler {
         orderTransactionService.handlePaymentCompleted(event);
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMPLETION)
     public void onPaymentFailed(PaymentFailedEvent event) {
+        log.info("PaymentFailedEvent 처리 시작 - orderId: {}, paymentId: {}", event.orderId(), event.paymentId());
         orderTransactionService.handlePaymentFailed(event);
     }
 }

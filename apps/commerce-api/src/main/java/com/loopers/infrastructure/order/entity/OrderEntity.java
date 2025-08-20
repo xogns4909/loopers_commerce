@@ -30,6 +30,7 @@ public class OrderEntity extends BaseEntity {
 
     public static OrderEntity from(Order order) {
         OrderEntity entity = new OrderEntity();
+        entity.setId(order.getId());
         entity.userId = order.getUserId().value();
         entity.status = order.getStatus();
         entity.amount = order.getAmount().value().longValue();

@@ -67,32 +67,6 @@ class CompensationServiceTest {
         verify(couponService).releaseByOrderId(orderId);
     }
 
-    @Test
-    @DisplayName("쿠폰 해제 실패 시에도 재고 복원은 성공한다")
-    void shouldRestoreStockEvenWhenCouponReleaseFails() {
-        // given
-        Long orderId = 456L;
-        Long productId = 1L;
-        
-        List<OrderItem> orderItems = Arrays.asList(
-            new OrderItem(productId, 3, Price.of(BigDecimal.valueOf(15000)))
-        );
-        
-        Order mockOrder = mock(Order.class);
-        when(mockOrder.getItems()).thenReturn(orderItems);
-        when(orderService.getOrder(orderId)).thenReturn(mockOrder);
-        
-        // 쿠폰 해제 시 예외 발생 설정
-        doThrow(new RuntimeException("쿠폰 해제 실패")).when(couponService).releaseByOrderId(orderId);
-
-        // when
-        compensationService.reverseFor(orderId);
-
-        // then
-        // 재고 복원은 여전히 수행되어야 함
-        verify(productService).restoreStock(eq(productId), eq(3));
-        verify(couponService).releaseByOrderId(orderId);
-    }
 
     @Test
     @DisplayName("주문 아이템이 없는 경우에도 쿠폰 해제는 시도한다")

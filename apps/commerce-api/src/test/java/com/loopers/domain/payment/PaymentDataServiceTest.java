@@ -87,17 +87,5 @@ class PaymentDataServiceTest {
         verify(paymentRepository).updateToProcessing(paymentId, transactionKey);
     }
 
-    @Test
-    @DisplayName("결제 실패 상태 업데이트")
-    void updateToFailed_success() {
-        // given
-        Long paymentId = 1L;
-        String reason = "카드 승인 거절";
 
-        // when
-        paymentDataService.updateToFailed(paymentId, reason);
-
-        // then
-        verify(paymentRepository).updateToFailed(paymentId, reason);
-    }
 }
