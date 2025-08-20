@@ -41,18 +41,36 @@ public class Payment {
     }
 
     public static Payment create(UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
+        validateCreateParameters(userId, orderId, amount, method);
         return new Payment(null, orderId, userId, amount, method, null, null, PaymentStatus.PENDING, null);
     }
 
     public static Payment initiated(UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
+        validateCreateParameters(userId, orderId, amount, method);
         return new Payment(null, orderId, userId, amount, method, null, null, PaymentStatus.PENDING, null);
+    }
+
+    private static void validateCreateParameters(UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
+        if (orderId == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "주문 ID가 지정되지 않았습니다.");
+        }
+        if (method == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "결제 수단이 유효하지 않습니다.");
+        }
+        if (userId == null) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "사용자 정보가 필요합니다.");
+        }
+        if (amount == null || amount.value().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "결제 금액은 0보다 커야 합니다.");
+        }
     }
 
     public static Payment reconstruct(Long id, UserId userId, Long orderId, PaymentAmount amount, 
                                     PaymentMethod method, String transactionId, PaymentStatus status, String reason) {
         return new Payment(id, orderId, userId, amount, method, transactionId, null, status, reason);
     }
-    
+
+
     public static Payment reconstruct(Long id, UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
         return reconstruct(id, userId, orderId, amount, method, null, PaymentStatus.PENDING, null);
     }
