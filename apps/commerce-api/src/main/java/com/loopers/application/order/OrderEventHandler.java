@@ -1,42 +1,29 @@
 package com.loopers.application.order;
 
 import com.loopers.domain.order.OrderService;
-import com.loopers.domain.order.event.OrderFailedEvent;
 import com.loopers.domain.order.model.Order;
 import com.loopers.domain.payment.event.PaymentCompletedEvent;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderEventHandler {
 
-    private final OrderService orderService;
+    private final OrderTransactionService orderTransactionService;
 
-    @EventListener
-    @Transactional
-    public void handlePaymentCompleted(PaymentCompletedEvent event) {
-
-        Order order = orderService.getOrder(event.orderId());
-        if (order != null && !order.getStatus().isFinal()) {
-            orderService.completeOrder(order);
-        }
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onPaymentCompleted(PaymentCompletedEvent event) {
+        orderTransactionService.handlePaymentCompleted(event);
     }
 
-    @EventListener
-    @Transactional
-    public void handlePaymentFailed(PaymentFailedEvent event) {
-
-        Order order = orderService.getOrder(event.orderId());
-        if (order != null && !order.getStatus().isFinal()) {
-            Order failedOrder = order.fail();
-            orderService.save(failedOrder);
-        }
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onPaymentFailed(PaymentFailedEvent event) {
+        orderTransactionService.handlePaymentFailed(event);
     }
-
 }

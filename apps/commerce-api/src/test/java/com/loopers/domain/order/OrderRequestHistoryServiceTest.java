@@ -36,7 +36,7 @@ class OrderRequestHistoryServiceTest {
         Long orderId = 123L;
 
         // when
-        service.savePending(key, userId, orderId);
+        service.saveReceived(key, userId, orderId);
 
         // then
         verify(repository).save(argThat(history ->
@@ -56,7 +56,7 @@ class OrderRequestHistoryServiceTest {
         given(repository.findByIdempotencyKey(key)).willReturn(Optional.of(existing));
 
         // when
-        service.markSuccess(key);
+        service.markAccepted(key);
 
         // then
         verify(repository).save(argThat(h -> h.status() == OrderRequestStatus.SUCCESS));
@@ -85,7 +85,7 @@ class OrderRequestHistoryServiceTest {
         given(repository.findByIdempotencyKey(key)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> service.markSuccess(key))
+        assertThatThrownBy(() -> service.markAccepted(key))
             .isInstanceOf(CoreException.class)
             .hasMessageContaining("주문 요청 히스토리를 찾을 수 없습니다.");
     }

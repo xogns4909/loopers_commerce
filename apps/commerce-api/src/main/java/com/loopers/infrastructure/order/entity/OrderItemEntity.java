@@ -39,4 +39,6 @@ public class OrderItemEntity extends BaseEntity {
     public OrderItem toModel() {
         return new OrderItem(productId, quantity, Price.of(BigDecimal.valueOf(price)));
     }
+
+
 }

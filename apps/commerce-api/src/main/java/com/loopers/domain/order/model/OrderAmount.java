@@ -3,7 +3,9 @@ package com.loopers.domain.order.model;
 import com.loopers.domain.common.Money;
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.ToString;
 
+@ToString
 public class OrderAmount extends Money {
 
     public OrderAmount(BigDecimal amount) {

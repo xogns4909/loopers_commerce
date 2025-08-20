@@ -40,7 +40,7 @@ class OrderServiceTest {
         OrderSearchCommand command = new OrderSearchCommand(userId, pageable);
 
         List<OrderSummaryResponse> data = List.of(
-            new OrderSummaryResponse(1L, 10000L, OrderStatus.COMPLETED, ZonedDateTime.now())
+            new OrderSummaryResponse(1L, 10000L, OrderStatus.PENDING, ZonedDateTime.now())
         );
 
         given(orderRepository.findOrderSummariesByUserId(eq(userId), eq(pageable)))
@@ -55,7 +55,7 @@ class OrderServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.getContent().get(0).orderId()).isEqualTo(1L);
-        assertThat(result.getContent().get(0).status()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(result.getContent().get(0).status()).isEqualTo(OrderStatus.PENDING);
     }
 
     @Test
@@ -73,7 +73,7 @@ class OrderServiceTest {
         OrderDetailResponse response = new OrderDetailResponse(
             orderId,
            10000L,
-            OrderStatus.COMPLETED,
+            OrderStatus.PENDING,
             items
         );
 

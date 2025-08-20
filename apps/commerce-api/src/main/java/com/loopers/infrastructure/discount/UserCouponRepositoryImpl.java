@@ -4,6 +4,7 @@ import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.discount.UserCouponRepository;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.discount.entity.UserCouponEntity;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -28,5 +29,6 @@ public class UserCouponRepositoryImpl implements UserCouponRepository {
     public UserCoupon save(UserCoupon userCoupon) {
         return jpaUserCouponRepository.save(UserCouponEntity.from(userCoupon)).toModel();
     }
+
 }
 

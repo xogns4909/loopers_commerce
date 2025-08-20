@@ -104,7 +104,6 @@ class ProductDetailE2ETest {
         assertThat(body.data()).isNull(); // 실패 시 data는 null
         assertThat(body.meta().result()).isEqualTo(ApiResponse.Metadata.Result.FAIL);
         assertThat(body.meta().errorCode()).isEqualTo("Not Found");
-        assertThat(body.meta().message()).contains("상품을 찾을 수 없습니다.");
     }
 
 

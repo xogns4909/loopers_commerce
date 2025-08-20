@@ -44,6 +44,10 @@ public class Payment {
         return new Payment(null, orderId, userId, amount, method, null, null, PaymentStatus.PENDING, null);
     }
 
+    public static Payment initiated(UserId userId, Long orderId, PaymentAmount amount, PaymentMethod method) {
+        return new Payment(null, orderId, userId, amount, method, null, null, PaymentStatus.PENDING, null);
+    }
+
     public static Payment reconstruct(Long id, UserId userId, Long orderId, PaymentAmount amount, 
                                     PaymentMethod method, String transactionId, PaymentStatus status, String reason) {
         return new Payment(id, orderId, userId, amount, method, transactionId, null, status, reason);

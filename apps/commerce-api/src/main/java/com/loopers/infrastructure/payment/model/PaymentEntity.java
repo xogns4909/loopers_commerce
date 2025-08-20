@@ -70,4 +70,16 @@ public class PaymentEntity extends BaseEntity {
             reason
         ).withTransactionKey(transactionKey);
     }
+
+    public void updateTransactionKey(String transactionKey) {
+        this.transactionKey = transactionKey;
+    }
+
+    public void updateStatus(PaymentStatus status) {
+        this.status = status;
+    }
+
+    public void updateReason(String reason) {
+        this.reason = reason;
+    }
 }

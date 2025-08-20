@@ -56,13 +56,13 @@ class OrderFacadeTest {
         List<OrderItem> orderItems = List.of(new OrderItem(1L, 2, itemPrice));
         Order order = Order.create(userId, orderItems, orderAmount);
         ReflectionTestUtils.setField(order, "id", 1L);
-        OrderResponse fakeResponse = new OrderResponse(order.getId(), order.getAmount().value(), OrderStatus.COMPLETED);
+        OrderResponse fakeResponse = new OrderResponse(order.getId(), order.getAmount().value(), OrderStatus.PENDING);
 
         // stubbing
-        when(orderService.createOrder(userId, items, null)).thenReturn(order);
+        when(orderService.createOrder(userId, orderItems, null)).thenReturn(order);
         when(orderRequestHistoryService.findOrderIdByIdempotencyKey("123")).thenReturn(Optional.empty());
         when(orderProcessor.process(command)).thenReturn(order);
-        when(orderProcessor.completeOrder(order, command.idempotencyKey())).thenReturn(fakeResponse);
+//        when(orderProcessor.completeOrder(order, command.idempotencyKey())).thenReturn(fakeResponse);
 
 
         // when
@@ -75,7 +75,7 @@ class OrderFacadeTest {
 
         assertThat(response.orderId()).isEqualTo(1L);
         assertThat(response.amount()).isEqualTo(order.getAmount().value());
-        assertThat(response.status()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(OrderStatus.PENDING);
     }
 
 

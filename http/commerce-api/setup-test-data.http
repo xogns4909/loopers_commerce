@@ -1,0 +1,68 @@
+### 1. 유저 등록
+POST {{commerce-api}}/api/v1/users/register
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "username": "테스트유저",
+  "email": "test@example.com",
+  "birthday": "1990-01-01",
+  "gender": "MALE"
+}
+
+### 2. 포인트 충전 (100,000원)
+POST {{commerce-api}}/api/v1/points/charge
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "amount": 100000
+}
+
+### 3. 상품 목록 조회 (기존 상품 확인)
+GET {{commerce-api}}/api/v1/products
+
+### 4. 포인트 결제 테스트 (기존 방식)
+POST {{commerce-api}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ],
+  "paymentMethod": "POINT",
+  "idempotencyKey": "test-point-001"
+}
+
+### 5. 카드 결제 테스트 (새로운 방식)
+POST {{commerce-api}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "user123",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ],
+  "paymentMethod": "CARD",
+  "idempotencyKey": "test-card-001"
+}
+
+### 6. PG 시뮬레이터 직접 테스트
+POST {{pg-simulator}}/api/v1/payments
+X-USER-ID: user123
+Content-Type: application/json
+
+{
+  "orderId": "direct-test-001",
+  "cardType": "SAMSUNG",
+  "cardNo": "1234-5678-9814-1451",
+  "amount": "5000",
+  "callbackUrl": "http://localhost:8080/api/v1/payments/callback"
+}

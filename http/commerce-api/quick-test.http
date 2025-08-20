@@ -1,0 +1,17 @@
+### 상품 조회 테스트
+GET {{commerce-api}}/api/v1/products
+
+### 특정 상품 조회
+GET {{commerce-api}}/api/v1/products/1
+
+### 포인트 충전 (테스트를 위해)
+POST {{commerce-api}}/api/v1/points/charge
+Content-Type: application/json
+
+{
+  "userId": "kth4909",
+  "amount": 100000
+}
+
+### 유저 정보 조회
+GET {{commerce-api}}/api/v1/users/user123

@@ -1,0 +1,214 @@
+### ===== 결제 시스템 종합 테스트 =====
+### 개선된 결제 시스템의 모든 기능을 테스트합니다.
+
+### 환경 변수 설정
+@commerce-api = http://localhost:8080
+@pg-simulator = http://localhost:8082
+@test-user = user123
+@test-order-point = test-point-order-{{$timestamp}}
+@test-order-card = test-card-order-{{$timestamp}}
+
+### ===== 1. 포인트 결제 테스트 =====
+### 즉시 성공 처리되는 포인트 결제를 테스트합니다.
+
+POST {{commerce-api}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "{{test-user}}",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ],
+  "paymentMethod": "POINT",
+  "idempotencyKey": "{{test-order-point}}"
+}
+
+> {%
+    client.test("포인트 결제 성공", function() {
+        client.assert(response.status === 200 || response.status === 201, "응답 상태 확인");
+        
+        if (response.body && response.body.data) {
+            client.assert(response.body.data.paymentStatus === "SUCCESS", "결제 상태가 SUCCESS여야 함");
+            client.log("포인트 결제 완료: " + JSON.stringify(response.body.data));
+        }
+    });
+%}
+
+###
+
+### ===== 2. 카드 결제 테스트 =====
+### PG를 통한 카드 결제를 테스트합니다.
+
+POST {{commerce-api}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "{{test-user}}",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    }
+  ],
+  "paymentMethod": "CARD",
+  "idempotencyKey": "{{test-order-card}}"
+}
+
+> {%
+    client.test("카드 결제 요청", function() {
+        client.assert(response.status === 200 || response.status === 201, "응답 상태 확인");
+        
+        if (response.body && response.body.data) {
+            // 카드 결제는 SUCCESS 또는 PROCESSING 상태가 될 수 있음
+            const validStatuses = ["SUCCESS", "PROCESSING", "PENDING"];
+            client.assert(validStatuses.includes(response.body.data.paymentStatus), 
+                         "결제 상태가 유효해야 함: " + response.body.data.paymentStatus);
+            
+            // 거래키 저장 (콜백 테스트용)
+            if (response.body.data.transactionKey) {
+                client.global.set("transaction_key", response.body.data.transactionKey);
+                client.global.set("order_id", response.body.data.orderId);
+            }
+            
+            client.log("카드 결제 요청 완료: " + JSON.stringify(response.body.data));
+        }
+    });
+%}
+
+###
+
+### ===== 3. PG 콜백 테스트 (성공) =====
+### PG에서 결제 성공 콜백을 시뮬레이션합니다.
+
+POST {{commerce-api}}/api/v1/payments/callback
+Content-Type: application/json
+
+{
+  "transactionKey": "{{transaction_key}}",
+  "orderId": "{{order_id}}",
+  "status": "SUCCESS",
+  "amount": "10000",
+  "reason": "정상 승인되었습니다.",
+  "createdAt": "{{$datetime iso8601}}",
+  "updatedAt": "{{$datetime iso8601}}"
+}
+
+> {%
+    client.test("PG 콜백 성공 처리", function() {
+        client.assert(response.status === 200, "콜백 응답 상태 확인");
+        client.assert(response.body === "OK", "콜백 응답 내용 확인");
+        client.log("PG 콜백 성공 처리 완료");
+    });
+%}
+
+###
+
+### ===== 4. PG 콜백 테스트 (실패) =====
+### PG에서 결제 실패 콜백을 시뮬레이션합니다.
+
+POST {{commerce-api}}/api/v1/payments/callback
+Content-Type: application/json
+
+{
+  "transactionKey": "TXN_FAIL_TEST_{{$timestamp}}",
+  "orderId": "999999",
+  "status": "FAILED",
+  "amount": "5000",
+  "reason": "한도초과입니다. 다른 카드를 선택해주세요.",
+  "createdAt": "{{$datetime iso8601}}",
+  "updatedAt": "{{$datetime iso8601}}"
+}
+
+> {%
+    client.test("PG 콜백 실패 처리", function() {
+        // 존재하지 않는 거래키이므로 404 또는 400 에러 예상
+        client.assert(response.status === 404 || response.status === 400, 
+                     "존재하지 않는 거래키에 대한 에러 응답");
+        client.log("잘못된 콜백 요청 적절히 처리됨: " + response.status);
+    });
+%}
+
+###
+
+### ===== 5. PG 시뮬레이터 직접 테스트 =====
+### PG 시뮬레이터와의 직접 연동을 테스트합니다.
+
+POST {{pg-simulator}}/api/v1/payments
+X-USER-ID: {{test-user}}
+Content-Type: application/json
+
+{
+  "orderId": "{{$timestamp}}",
+  "cardType": "SAMSUNG",
+  "cardNo": "1234-5678-9012-3456",
+  "amount": "15000",
+  "callbackUrl": "{{commerce-api}}/api/v1/payments/callback"
+}
+
+> {%
+    client.test("PG 시뮬레이터 연동", function() {
+        client.assert(response.status === 200 || response.status === 201, "PG 응답 상태 확인");
+        
+        if (response.body) {
+            client.assert(response.body.transactionKey, "거래키 존재 확인");
+            client.assert(response.body.status, "결제 상태 존재 확인");
+            client.log("PG 시뮬레이터 응답: " + JSON.stringify(response.body));
+        }
+    });
+%}
+
+###
+
+### ===== 6. 에러 케이스 테스트 =====
+
+### 6-1. 잘못된 결제 방법
+POST {{commerce-api}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "{{test-user}}",
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ],
+  "paymentMethod": "INVALID_METHOD",
+  "idempotencyKey": "error-test-{{$timestamp}}"
+}
+
+> {%
+    client.test("잘못된 결제 방법", function() {
+        client.assert(response.status >= 400, "에러 상태 코드 확인");
+        client.log("잘못된 결제 방법 요청 적절히 처리됨");
+    });
+%}
+
+###
+
+### 6-2. 빈 주문 아이템
+POST {{commerce-api}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "{{test-user}}",
+  "items": [],
+  "paymentMethod": "POINT",
+  "idempotencyKey": "empty-items-{{$timestamp}}"
+}
+
+> {%
+    client.test("빈 주문 아이템", function() {
+        client.assert(response.status >= 400, "에러 상태 코드 확인");
+        client.log("빈 주문 아이템 요청 적절히 처리됨");
+    });
+%}
+
+###
+
+### ===== 테스트 완료 =====
+### 모든 테스트가 완료되었습니다.
+### 로그를 확인하여 각 결제 방식이 올바르게 동작하는지 확인하세요.
