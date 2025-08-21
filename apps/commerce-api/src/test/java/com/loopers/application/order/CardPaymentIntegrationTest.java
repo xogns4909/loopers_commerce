@@ -6,30 +6,18 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.loopers.application.order.OrderCommand;
 import com.loopers.application.order.PaymentCommand;
-import com.loopers.application.payment.PaymentCallbackFacade;
 import com.loopers.domain.order.model.OrderAmount;
-import com.loopers.domain.order.model.OrderStatus;
 import com.loopers.domain.payment.PaymentDataService;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.payment.strategy.CardPaymentStrategy;
 import com.loopers.domain.user.model.UserId;
-import com.loopers.infrastructure.payment.pg.PgClient;
-import com.loopers.infrastructure.payment.pg.dto.PgApiResponse;
+import com.loopers.infrastructure.payment.pg.PgPaymentGateway;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentRequest;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentResponse;
-import com.loopers.interfaces.api.order.OrderItemRequest;
-import com.loopers.interfaces.api.order.OrderRequest;
-import com.loopers.interfaces.api.order.OrderResponse;
-import com.loopers.interfaces.api.payment.PaymentCallbackRequest;
-import feign.FeignException;
-import feign.Request;
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,19 +32,13 @@ import org.springframework.context.ApplicationEventPublisher;
 class CardPaymentIntegrationTest {
 
     @Mock
-    private PgClient pgClient;
+    private PgPaymentGateway pgGateway;
     
     @Mock
     private PaymentDataService paymentDataService;
     
     @Mock
     private ApplicationEventPublisher eventPublisher;
-    
-    @Mock
-    private OrderFacade orderFacade;
-    
-    @Mock
-    private PaymentCallbackFacade paymentCallbackFacade;
 
     @InjectMocks
     private CardPaymentStrategy cardPaymentStrategy;
@@ -79,16 +61,11 @@ class CardPaymentIntegrationTest {
     @Test
     @DisplayName("카드 결제 전체 성공 시나리오")
     void card_payment_full_success_scenario() {
-        // given:
         when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
         
         PgPaymentResponse pgResponse = new PgPaymentResponse("tx_123456", "SUCCESS", "결제 요청 성공");
-        PgApiResponse<PgPaymentResponse> apiResponse = new PgApiResponse<>(
-            new PgApiResponse.Meta("SUCCESS", null, "성공"),
-            pgResponse
-        );
-        when(pgClient.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
-            .thenReturn(apiResponse);
+        when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
+            .thenReturn(pgResponse);
 
         // when
         cardPaymentStrategy.pay(paymentCommand);
@@ -96,24 +73,24 @@ class CardPaymentIntegrationTest {
         // then
         verify(paymentDataService).createInitiatedPayment(paymentCommand);
         verify(paymentDataService).updateToProcessing(PAYMENT_ID, "tx_123456");
-        verify(pgClient).requestPayment(eq(USER_ID), any(PgPaymentRequest.class));
+        verify(pgGateway).requestPayment(eq(USER_ID), any(PgPaymentRequest.class));
     }
 
     @Test
     @DisplayName("PG 서버 500 에러 시 실패 이벤트 발행")
     void pg_server_500_error_publishes_failed_event() {
-        // given
+        // given:
         when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
         
-        Request mockRequest = Request.create(Request.HttpMethod.POST, "url", Collections.emptyMap(), null, StandardCharsets.UTF_8, null);
-        when(pgClient.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
-            .thenThrow(new FeignException.InternalServerError("서버 오류", mockRequest, null, Collections.emptyMap()));
+        when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
+            .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 서버 오류"));
 
         // when
         cardPaymentStrategy.pay(paymentCommand);
 
         // then:
         verify(paymentDataService).createInitiatedPayment(paymentCommand);
+        verify(paymentDataService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
         verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
     }
 
@@ -123,35 +100,14 @@ class CardPaymentIntegrationTest {
         // given
         when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
         
-        Request mockRequest = Request.create(Request.HttpMethod.POST, "url", Collections.emptyMap(), null, StandardCharsets.UTF_8, null);
-        when(pgClient.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
-            .thenThrow(new FeignException.GatewayTimeout("타임아웃", mockRequest, null, Collections.emptyMap()));
+        when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
+            .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 타임아웃"));
 
         // when
         cardPaymentStrategy.pay(paymentCommand);
 
         // then
-        verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
-    }
-
-    @Test
-    @DisplayName("PG 응답에 transactionKey가 없으면 실패 이벤트 발행")
-    void pg_response_without_transaction_key_publishes_failed_event() {
-        // given: transactionKey가 null인 응답
-        when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
-        
-        PgPaymentResponse pgResponse = new PgPaymentResponse(null, "SUCCESS", "결제 요청 성공");
-        PgApiResponse<PgPaymentResponse> apiResponse = new PgApiResponse<>(
-            new PgApiResponse.Meta("SUCCESS", null, "성공"),
-            pgResponse
-        );
-        when(pgClient.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
-            .thenReturn(apiResponse);
-
-        // when
-        cardPaymentStrategy.pay(paymentCommand);
-
-        // then
+        verify(paymentDataService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
         verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
     }
 
@@ -166,11 +122,7 @@ class CardPaymentIntegrationTest {
         when(paymentDataService.createInitiatedPayment(any())).thenReturn(1L, 2L, 3L);
         
         PgPaymentResponse pgResponse = new PgPaymentResponse("tx_123", "SUCCESS", "성공");
-        PgApiResponse<PgPaymentResponse> apiResponse = new PgApiResponse<>(
-            new PgApiResponse.Meta("SUCCESS", null, "성공"),
-            pgResponse
-        );
-        when(pgClient.requestPayment(any(), any())).thenReturn(apiResponse);
+        when(pgGateway.requestPayment(any(), any())).thenReturn(pgResponse);
 
         // when
         cardPaymentStrategy.pay(command1);
@@ -179,7 +131,7 @@ class CardPaymentIntegrationTest {
 
         // then
         verify(paymentDataService, org.mockito.Mockito.times(3)).createInitiatedPayment(any());
-        verify(pgClient, org.mockito.Mockito.times(3)).requestPayment(any(), any());
+        verify(pgGateway, org.mockito.Mockito.times(3)).requestPayment(any(), any());
     }
 
     private PaymentCommand createPaymentCommand(String userId, Long orderId) {

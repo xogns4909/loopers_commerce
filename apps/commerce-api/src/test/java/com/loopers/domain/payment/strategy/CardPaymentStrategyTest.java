@@ -7,19 +7,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.loopers.application.order.PaymentCommand;
-import com.loopers.domain.common.Money;
 import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.payment.PaymentDataService;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.user.model.UserId;
-import com.loopers.infrastructure.payment.pg.PgClient;
-import com.loopers.infrastructure.payment.pg.dto.PgApiResponse;
+import com.loopers.infrastructure.payment.pg.PgPaymentGateway;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentRequest;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentResponse;
 import feign.FeignException;
 import feign.Request;
-import feign.RequestTemplate;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -40,7 +37,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class CardPaymentStrategyTest {
 
     @Mock
-    private PgClient pgClient;
+    private PgPaymentGateway pg;
 
     @Mock
     private PaymentDataService paymentDataService;
@@ -98,12 +95,8 @@ class CardPaymentStrategyTest {
             when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             PgPaymentResponse pgResponse = new PgPaymentResponse("tx_123456", "SUCCESS", "결제 요청 성공");
-            PgApiResponse<PgPaymentResponse> apiResponse = new PgApiResponse<>(
-                new PgApiResponse.Meta("SUCCESS", null, "성공"),
-                pgResponse
-            );
-            when(pgClient.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
-                .thenReturn(apiResponse);
+            when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
+                .thenReturn(pgResponse);
 
             // when
             cardPaymentStrategy.pay(paymentCommand);
@@ -114,7 +107,7 @@ class CardPaymentStrategyTest {
             
             // PG 요청 파라미터 검증
             ArgumentCaptor<PgPaymentRequest> requestCaptor = ArgumentCaptor.forClass(PgPaymentRequest.class);
-            verify(pgClient).requestPayment(eq("testUser"), requestCaptor.capture());
+            verify(pg).requestPayment(eq("testUser"), requestCaptor.capture());
             
             PgPaymentRequest capturedRequest = requestCaptor.getValue();
             assertThat(capturedRequest.orderId()).isEqualTo("ORDER_100");
@@ -129,12 +122,8 @@ class CardPaymentStrategyTest {
             when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             PgPaymentResponse pgResponse = new PgPaymentResponse(null, "SUCCESS", "결제 요청 성공");
-            PgApiResponse<PgPaymentResponse> apiResponse = new PgApiResponse<>(
-                new PgApiResponse.Meta("SUCCESS", null, "성공"),
-                pgResponse
-            );
-            when(pgClient.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
-                .thenReturn(apiResponse);
+            when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
+                .thenReturn(pgResponse);
 
             // when
             cardPaymentStrategy.pay(paymentCommand);
@@ -146,7 +135,7 @@ class CardPaymentStrategyTest {
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(failedEvent.orderId()).isEqualTo(100L);
-            assertThat(failedEvent.reason()).isEqualTo("PG 응답 무효");
+            assertThat(failedEvent.reason()).isEqualTo("PG 요청 무효");
         }
 
         @Test
@@ -156,7 +145,7 @@ class CardPaymentStrategyTest {
             when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             Request request = Request.create(Request.HttpMethod.POST, "url", Collections.emptyMap(), null, StandardCharsets.UTF_8, null);
-            when(pgClient.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
+            when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
                 .thenThrow(new FeignException.InternalServerError("서버 오류", request, null, Collections.emptyMap()));
 
             // when
@@ -169,7 +158,7 @@ class CardPaymentStrategyTest {
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(failedEvent.orderId()).isEqualTo(100L);
-            assertThat(failedEvent.reason()).isEqualTo("PG 서버 오류");
+            assertThat(failedEvent.reason()).isEqualTo("PG 요청 무효");
         }
 
         @Test
@@ -177,7 +166,7 @@ class CardPaymentStrategyTest {
         void general_exception_publishes_failed_event() {
             // given
             when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
-            when(pgClient.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
+            when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
                 .thenThrow(new RuntimeException("예상치 못한 오류"));
 
             // when
@@ -190,7 +179,7 @@ class CardPaymentStrategyTest {
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(failedEvent.orderId()).isEqualTo(100L);
-            assertThat(failedEvent.reason()).isEqualTo("PG 서버 오류");
+            assertThat(failedEvent.reason()).isEqualTo("PG 요청 무효");
         }
     }
 }

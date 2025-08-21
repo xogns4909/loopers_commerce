@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentDataService {
     
     private final PaymentRepository paymentRepository;
-    private final ApplicationEventPublisher eventPublisher;
     
     @Transactional
     public Long createInitiatedPayment(PaymentCommand cmd) {
@@ -38,5 +37,7 @@ public class PaymentDataService {
     }
 
 
-
+    public void updateToFailed(Long paymentId, String reason) {
+        paymentRepository.updateToFailed(paymentId, reason);
+    }
 }
