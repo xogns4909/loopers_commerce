@@ -43,6 +43,10 @@ feign:
       default:
         connectTimeout: 1000
         readTimeout: 3000
+      pg-client:
+        connectTimeout: 500     # ms
+        readTimeout: 2000       # ms
+        loggerLevel: BASIC
 
 ---
 spring:
