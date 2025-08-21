@@ -12,6 +12,8 @@ public record OrderCommand(
     UserId userId,
     List<OrderItemCommand> items,
     PaymentMethod paymentMethod,
+    String CardType,
+    String CardNo,
     Price price,
     String idempotencyKey,
     Long couponId

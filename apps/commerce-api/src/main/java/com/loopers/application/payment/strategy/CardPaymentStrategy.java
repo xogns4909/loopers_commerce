@@ -28,14 +28,17 @@ public class CardPaymentStrategy implements PaymentStrategy {
     private String callbackUrl;
 
     @Override
-    public boolean supports(PaymentMethod method) { return method == PaymentMethod.CARD; }
+    public boolean supports(PaymentMethod method) {
+        return method == PaymentMethod.CARD;
+    }
 
     @Override
     public void pay(PaymentCommand cmd) {
         Long paymentId = paymentService.createInitiatedPayment(cmd); // PENDING
         log.info("결제 PENDING 생성 - paymentId: {}, orderId: {}", paymentId, cmd.orderId());
         try {
-            PgPaymentRequest req = PgPaymentRequest.of("ORDER_" + cmd.orderId(), cmd.amount().value().longValue(), callbackUrl);
+            PgPaymentRequest req = PgPaymentRequest.of("ORDER_" + cmd.orderId(), cmd.CardType(), cmd.CardNo(),
+                cmd.amount().value().longValue(), callbackUrl);
             PgPaymentResponse resp = pg.requestPayment(cmd.userId().value(), req);
 
             if (resp.transactionKey() == null || resp.transactionKey().isEmpty()) {

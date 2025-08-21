@@ -33,7 +33,8 @@ class OrderFacadeTest {
     private OrderProcessor orderProcessor = mock(OrderProcessor.class);
     private OrderRequestHistoryService orderRequestHistoryService = mock(OrderRequestHistoryService.class);
     private OrderFacade orderFacade;
-
+    private final String CARD_TYPE = "SAMSUNG";
+    private final String CARD_NO = "1234-1234-1234-1234";
     @BeforeEach
     void setUp() {
         orderFacade = new OrderFacade(paymentService,orderService,orderRequestHistoryService,orderProcessor);
@@ -51,7 +52,7 @@ class OrderFacadeTest {
             new OrderCommand.OrderItemCommand(1L, 2, itemPrice, "123",1L)
         );
 
-        OrderCommand command = new OrderCommand(userId, items, method, itemPrice, "123", 1L);
+        OrderCommand command = new OrderCommand(userId, items, method,CARD_TYPE,CARD_NO, itemPrice, "123", 1L);
         OrderAmount orderAmount = OrderAmount.of(BigDecimal.valueOf(500));
         List<OrderItem> orderItems = List.of(new OrderItem(1L, 2, itemPrice));
         Order order = Order.create(userId, orderItems, orderAmount);
@@ -100,6 +101,8 @@ class OrderFacadeTest {
             userId,
             List.of(new OrderCommand.OrderItemCommand(1L, 2, Price.of(BigDecimal.valueOf(20000)), "idemp-001",1L)),
             PaymentMethod.POINT,
+            CARD_TYPE,
+            CARD_NO,
             Price.of(BigDecimal.valueOf(20000)),
             "idemp-001",
             null

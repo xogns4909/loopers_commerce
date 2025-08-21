@@ -10,11 +10,11 @@ public record PgPaymentRequest(
     String amount,
     String callbackUrl
 ) {
-    public static PgPaymentRequest of(String orderId, long amount, String callbackUrl) {
+    public static PgPaymentRequest of(String orderId,String cardType, String cardNo, long amount, String callbackUrl) {
         return PgPaymentRequest.builder()
             .orderId(orderId)
-            .cardType("SAMSUNG")
-            .cardNo("1234-5678-9012-3456")
+            .cardType(cardType)
+            .cardNo(cardNo)
             .amount(String.valueOf(amount))
             .callbackUrl(callbackUrl)
             .build();

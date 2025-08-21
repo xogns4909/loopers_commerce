@@ -1,5 +1,6 @@
 package com.loopers.infrastructure.payment.pg;
 
+import com.loopers.infrastructure.payment.pg.dto.PgApiResponse;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentRequest;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentResponse;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentStatusResponse;
@@ -24,7 +25,7 @@ public class PgPaymentGateway {
     @Bulkhead(name = "pg-client")
     @CircuitBreaker(name = "pg-client", fallbackMethod = "requestPaymentFallback")
     public PgPaymentResponse requestPayment(String userId, PgPaymentRequest req) {
-        var res = pgClient.requestPayment(userId, req);
+        PgApiResponse<PgPaymentResponse> res = pgClient.requestPayment(userId, req);
 
         if (res == null || res.meta() == null) {
             throw new CoreException(ErrorType.INTERNAL_ERROR, "PG 응답/메타 없음");
@@ -35,7 +36,7 @@ public class PgPaymentGateway {
             throw new CoreException(ErrorType.INTERNAL_ERROR, msg);
         }
 
-        var data = res.data();
+        PgPaymentResponse data = res.data();
         if (data == null || data.transactionKey() == null || data.transactionKey().isBlank()) {
             throw new CoreException(ErrorType.INTERNAL_ERROR, "거래키 없음");
         }

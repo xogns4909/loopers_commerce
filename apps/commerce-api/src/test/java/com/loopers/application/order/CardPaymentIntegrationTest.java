@@ -47,6 +47,8 @@ class CardPaymentIntegrationTest {
     private PaymentCommand paymentCommand;
     private final Long PAYMENT_ID = 1L;
     private final Long ORDER_ID = 100L;
+    private final String CARD_TYPE = "SAMSUNG";
+    private final String CARD_NO = "1234-1234-1234-1234";
     private final String USER_ID = "testUser";
 
     @BeforeEach
@@ -54,6 +56,8 @@ class CardPaymentIntegrationTest {
         paymentCommand = new PaymentCommand(
             UserId.of(USER_ID),
             ORDER_ID,
+            CARD_TYPE,
+            CARD_NO,
             OrderAmount.of(BigDecimal.valueOf(10000)),
             PaymentMethod.CARD
         );
@@ -139,6 +143,8 @@ class CardPaymentIntegrationTest {
         return new PaymentCommand(
             UserId.of(userId),
             orderId,
+            CARD_TYPE,
+            CARD_NO,
             OrderAmount.of(BigDecimal.valueOf(5000)),
             PaymentMethod.CARD
         );

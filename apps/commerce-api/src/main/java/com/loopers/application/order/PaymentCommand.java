@@ -9,12 +9,14 @@ import lombok.Getter;
 
 
 @Builder
-public record PaymentCommand(UserId userId, Long orderId, OrderAmount amount, PaymentMethod paymentMethod) {
+public record PaymentCommand(UserId userId, Long orderId,String CardType,String CardNo, OrderAmount amount, PaymentMethod paymentMethod) {
 
     public static PaymentCommand from(OrderCommand command, Order order) {
         return new PaymentCommand(
             command.userId(),
             order.getId(),
+            command.CardType(),
+            command.CardNo(),
             order.getAmount(),
             command.paymentMethod()
         );
