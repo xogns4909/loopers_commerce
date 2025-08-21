@@ -21,4 +21,8 @@ public interface PaymentRepository {
     void updateToFailed(Long paymentId, String reason);
 
     boolean existsCompleted(Long orderId, PaymentMethod method);
+
+    List<Payment> findPending();
+
+    void updateToCompleted(Long paymentId, String transactionKey);
 }

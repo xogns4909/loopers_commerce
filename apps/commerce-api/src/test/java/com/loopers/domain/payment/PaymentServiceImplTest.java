@@ -1,12 +1,12 @@
 package com.loopers.domain.payment;
 
 import com.loopers.application.order.PaymentCommand;
+import com.loopers.application.payment.PaymentStateServiceImpl;
 import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.payment.model.Payment;
 import com.loopers.domain.payment.model.PaymentAmount;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.user.model.UserId;
-import com.loopers.domain.common.Money;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,13 +23,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PaymentDataServiceTest {
+class paymentStateServiceimpltest {
 
     @Mock
     private PaymentRepository paymentRepository;
 
     @InjectMocks
-    private PaymentDataService paymentDataService;
+    private PaymentStateServiceImpl paymentStateService;
 
     private PaymentCommand paymentCommand;
 
@@ -47,26 +47,29 @@ class PaymentDataServiceTest {
     @DisplayName("결제 생성 성공")
     void createInitiatedPayment_success() {
         // given
-        Payment mockPayment = Payment.initiated(
+        Payment mockPayment = Payment.create(
             paymentCommand.userId(), 
             paymentCommand.orderId(), 
             PaymentAmount.from(paymentCommand.amount()), 
             paymentCommand.paymentMethod()
         );
-        
-        // 리플렉션으로 ID 설정 (실제로는 DB에서 자동 생성됨)
+
         Payment savedPayment = Payment.reconstruct(
             99L, 
             mockPayment.getUserId(), 
             mockPayment.getOrderId(), 
             mockPayment.getAmount(), 
-            mockPayment.getMethod()
+            mockPayment.getMethod(),
+            mockPayment.getTransactionId(),
+            mockPayment.getTransactionKey(),
+            mockPayment.getStatus(),
+            mockPayment.getFailureReason()
         );
         
         when(paymentRepository.save(any(Payment.class))).thenReturn(savedPayment);
 
         // when
-        Long paymentId = paymentDataService.createInitiatedPayment(paymentCommand);
+        Long paymentId = paymentStateService.createInitiatedPayment(paymentCommand);
 
         // then
         assertThat(paymentId).isEqualTo(99L);
@@ -81,7 +84,7 @@ class PaymentDataServiceTest {
         String transactionKey = "tx_123456";
 
         // when
-        paymentDataService.updateToProcessing(paymentId, transactionKey);
+        paymentStateService.updateToProcessing(paymentId, transactionKey);
 
         // then
         verify(paymentRepository).updateToProcessing(paymentId, transactionKey);

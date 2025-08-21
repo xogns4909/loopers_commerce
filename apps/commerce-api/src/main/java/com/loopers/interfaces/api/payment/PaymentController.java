@@ -1,6 +1,6 @@
 package com.loopers.interfaces.api.payment;
 
-import com.loopers.application.payment.PaymentCallbackFacade;
+import com.loopers.application.payment.PaymentFacade;
 import com.loopers.interfaces.api.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/payments")
-public class PaymentCallbackController {
+public class PaymentController {
 
-    private final PaymentCallbackFacade paymentCallbackFacade;
+    private final PaymentFacade paymentFacade;
 
     @PostMapping("/callback")
     public ResponseEntity<ApiResponse<String>> handleCallback(@RequestBody PaymentCallbackRequest request) {
 
-            paymentCallbackFacade.processCallback(request);
+            paymentFacade.processCallback(request);
             return ResponseEntity.ok(ApiResponse.success("OK"));
 
     }

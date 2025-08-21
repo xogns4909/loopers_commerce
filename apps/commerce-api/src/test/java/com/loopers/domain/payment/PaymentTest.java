@@ -40,7 +40,7 @@ class PaymentTest {
         void create_success() {
             Order order = createOrder();
 
-            Payment payment = Payment.initiated(order.getUserId(),order.getId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT);
+            Payment payment = Payment.create(order.getUserId(),order.getId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT);
 
 
 

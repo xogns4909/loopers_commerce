@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.loopers.application.payment.PaymentServiceImpl;
 import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.payment.event.PaymentCompletedEvent;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
@@ -42,7 +43,7 @@ class PaymentCallbackServiceTest {
     private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
-    private PaymentCallbackService paymentCallbackService;
+    private PaymentServiceImpl paymentCallbackService;
 
     private Payment payment;
     private final String TRANSACTION_KEY = "tx_123456";
@@ -56,9 +57,10 @@ class PaymentCallbackServiceTest {
             new PaymentAmount(BigDecimal.valueOf(10000)),
             PaymentMethod.CARD,
             "tx_123456",
+            TRANSACTION_KEY,
             PaymentStatus.PROCESSING,
             "결제 처리 중"
-        ).withTransactionKey(TRANSACTION_KEY);
+        );
     }
 
     @Nested
@@ -89,7 +91,6 @@ class PaymentCallbackServiceTest {
 
             // then
             assertThat(result.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
-            assertThat(result.getReason()).isEqualTo("결제 완료");
 
             ArgumentCaptor<PaymentCompletedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentCompletedEvent.class);
             verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -124,7 +125,7 @@ class PaymentCallbackServiceTest {
 
             // then
             assertThat(result.getStatus()).isEqualTo(PaymentStatus.FAILED);
-            assertThat(result.getReason()).isEqualTo("카드 한도 초과");
+            assertThat(result.getFailureReason()).isEqualTo("카드 한도 초과");
 
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
             verify(eventPublisher).publishEvent(eventCaptor.capture());

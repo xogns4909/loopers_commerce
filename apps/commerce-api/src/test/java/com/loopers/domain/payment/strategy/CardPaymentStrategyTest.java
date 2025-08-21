@@ -7,8 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.loopers.application.order.PaymentCommand;
+import com.loopers.application.payment.PaymentStateServiceImpl;
+import com.loopers.application.payment.strategy.CardPaymentStrategy;
 import com.loopers.domain.order.model.OrderAmount;
-import com.loopers.domain.payment.PaymentDataService;
+import com.loopers.application.payment.PaymentServiceImpl;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.user.model.UserId;
@@ -40,7 +42,7 @@ class CardPaymentStrategyTest {
     private PgPaymentGateway pg;
 
     @Mock
-    private PaymentDataService paymentDataService;
+    private PaymentStateServiceImpl paymentService;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -92,7 +94,7 @@ class CardPaymentStrategyTest {
         @DisplayName("PG 응답 성공 시 결제 처리중 상태로 업데이트")
         void pg_success_update_to_processing() {
             // given
-            when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+            when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             PgPaymentResponse pgResponse = new PgPaymentResponse("tx_123456", "SUCCESS", "결제 요청 성공");
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
@@ -102,8 +104,8 @@ class CardPaymentStrategyTest {
             cardPaymentStrategy.pay(paymentCommand);
 
             // then
-            verify(paymentDataService).createInitiatedPayment(paymentCommand);
-            verify(paymentDataService).updateToProcessing(PAYMENT_ID, "tx_123456");
+            verify(paymentService).createInitiatedPayment(paymentCommand);
+            verify(paymentService).updateToProcessing(PAYMENT_ID, "tx_123456");
             
             // PG 요청 파라미터 검증
             ArgumentCaptor<PgPaymentRequest> requestCaptor = ArgumentCaptor.forClass(PgPaymentRequest.class);
@@ -119,7 +121,7 @@ class CardPaymentStrategyTest {
         @DisplayName("PG 응답에 transactionKey가 없으면 실패 이벤트 발행")
         void pg_response_without_transaction_key_publishes_failed_event() {
             // given
-            when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+            when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             PgPaymentResponse pgResponse = new PgPaymentResponse(null, "SUCCESS", "결제 요청 성공");
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
@@ -142,7 +144,7 @@ class CardPaymentStrategyTest {
         @DisplayName("PG 네트워크 에러 시 실패 이벤트 발행")
         void pg_network_error_publishes_failed_event() {
             // given
-            when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+            when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             Request request = Request.create(Request.HttpMethod.POST, "url", Collections.emptyMap(), null, StandardCharsets.UTF_8, null);
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
@@ -165,7 +167,7 @@ class CardPaymentStrategyTest {
         @DisplayName("일반적인 예외 발생 시 실패 이벤트 발행")
         void general_exception_publishes_failed_event() {
             // given
-            when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+            when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
                 .thenThrow(new RuntimeException("예상치 못한 오류"));
 

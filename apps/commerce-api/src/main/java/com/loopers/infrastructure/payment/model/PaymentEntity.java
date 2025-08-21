@@ -54,7 +54,7 @@ public class PaymentEntity extends BaseEntity {
         entity.transactionId = payment.getTransactionId();
         entity.transactionKey = payment.getTransactionKey();
         entity.status = payment.getStatus();
-        entity.reason = payment.getReason();
+        entity.reason = payment.getFailureReason();
         return entity;
     }
 
@@ -66,9 +66,10 @@ public class PaymentEntity extends BaseEntity {
             new PaymentAmount(BigDecimal.valueOf(amount)),
             method,
             transactionId,
+            transactionKey,
             status,
             reason
-        ).withTransactionKey(transactionKey);
+        );
     }
 
     public void updateTransactionKey(String transactionKey) {

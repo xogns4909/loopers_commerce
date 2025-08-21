@@ -20,4 +20,6 @@ public interface JpaPaymentRepository extends JpaRepository<PaymentEntity, Long>
     List<PaymentEntity> findByUserIdOrderByCreatedAtDesc(@Param("userId") String userId);
     
     boolean existsByOrderIdAndMethodAndStatus(Long orderId, PaymentMethod method, PaymentStatus status);
+
+    List<PaymentEntity> findByStatusOrderByCreatedAtAsc(PaymentStatus status);
 }

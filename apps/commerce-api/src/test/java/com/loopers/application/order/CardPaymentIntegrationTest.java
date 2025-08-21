@@ -6,11 +6,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.loopers.application.order.PaymentCommand;
+import com.loopers.application.payment.PaymentStateServiceImpl;
 import com.loopers.domain.order.model.OrderAmount;
-import com.loopers.domain.payment.PaymentDataService;
+import com.loopers.application.payment.PaymentServiceImpl;
+import com.loopers.domain.payment.PaymentStatePort;
 import com.loopers.domain.payment.model.PaymentMethod;
-import com.loopers.domain.payment.strategy.CardPaymentStrategy;
+import com.loopers.application.payment.strategy.CardPaymentStrategy;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.payment.pg.PgPaymentGateway;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentRequest;
@@ -35,7 +36,7 @@ class CardPaymentIntegrationTest {
     private PgPaymentGateway pgGateway;
     
     @Mock
-    private PaymentDataService paymentDataService;
+    private PaymentStateServiceImpl paymentService;
     
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -61,7 +62,7 @@ class CardPaymentIntegrationTest {
     @Test
     @DisplayName("카드 결제 전체 성공 시나리오")
     void card_payment_full_success_scenario() {
-        when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+        when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
         
         PgPaymentResponse pgResponse = new PgPaymentResponse("tx_123456", "SUCCESS", "결제 요청 성공");
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
@@ -71,8 +72,8 @@ class CardPaymentIntegrationTest {
         cardPaymentStrategy.pay(paymentCommand);
 
         // then
-        verify(paymentDataService).createInitiatedPayment(paymentCommand);
-        verify(paymentDataService).updateToProcessing(PAYMENT_ID, "tx_123456");
+        verify(paymentService).createInitiatedPayment(paymentCommand);
+        verify(paymentService).updateToProcessing(PAYMENT_ID, "tx_123456");
         verify(pgGateway).requestPayment(eq(USER_ID), any(PgPaymentRequest.class));
     }
 
@@ -80,7 +81,7 @@ class CardPaymentIntegrationTest {
     @DisplayName("PG 서버 500 에러 시 실패 이벤트 발행")
     void pg_server_500_error_publishes_failed_event() {
         // given:
-        when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+        when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
         
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 서버 오류"));
@@ -89,8 +90,8 @@ class CardPaymentIntegrationTest {
         cardPaymentStrategy.pay(paymentCommand);
 
         // then:
-        verify(paymentDataService).createInitiatedPayment(paymentCommand);
-        verify(paymentDataService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
+        verify(paymentService).createInitiatedPayment(paymentCommand);
+        verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
         verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
     }
 
@@ -98,7 +99,7 @@ class CardPaymentIntegrationTest {
     @DisplayName("PG 타임아웃 시 실패 이벤트 발행")
     void pg_timeout_publishes_failed_event() {
         // given
-        when(paymentDataService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
+        when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
         
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 타임아웃"));
@@ -107,7 +108,7 @@ class CardPaymentIntegrationTest {
         cardPaymentStrategy.pay(paymentCommand);
 
         // then
-        verify(paymentDataService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
+        verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
         verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
     }
 
@@ -119,7 +120,7 @@ class CardPaymentIntegrationTest {
         PaymentCommand command2 = createPaymentCommand("user2", 102L);
         PaymentCommand command3 = createPaymentCommand("user3", 103L);
 
-        when(paymentDataService.createInitiatedPayment(any())).thenReturn(1L, 2L, 3L);
+        when(paymentService.createInitiatedPayment(any())).thenReturn(1L, 2L, 3L);
         
         PgPaymentResponse pgResponse = new PgPaymentResponse("tx_123", "SUCCESS", "성공");
         when(pgGateway.requestPayment(any(), any())).thenReturn(pgResponse);
@@ -130,7 +131,7 @@ class CardPaymentIntegrationTest {
         cardPaymentStrategy.pay(command3);
 
         // then
-        verify(paymentDataService, org.mockito.Mockito.times(3)).createInitiatedPayment(any());
+        verify(paymentService, org.mockito.Mockito.times(3)).createInitiatedPayment(any());
         verify(pgGateway, org.mockito.Mockito.times(3)).requestPayment(any(), any());
     }
 

@@ -66,4 +66,19 @@ public class PaymentRepositoryImpl implements PaymentRepository {
         return jpaPaymentRepository.existsByOrderIdAndMethodAndStatus(
                 orderId, method, PaymentStatus.SUCCESS);
     }
+
+    @Override
+    public List<Payment> findPending() {
+        return jpaPaymentRepository.findByStatusOrderByCreatedAtAsc(PaymentStatus.PENDING)
+            .stream().map(PaymentEntity::toModel).toList();
+    }
+
+    @Override
+    public void updateToCompleted(Long paymentId, String txKey) {
+        jpaPaymentRepository.findById(paymentId).ifPresent(e -> {
+            if (txKey != null && !txKey.isBlank()) e.updateTransactionKey(txKey);
+            e.updateStatus(PaymentStatus.SUCCESS);
+            jpaPaymentRepository.save(e);
+        });
+    }
 }
