@@ -29,8 +29,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public Order createOrder(UserId userId, List<OrderItem> orderItems, OrderAmount orderAmount) {
-        Order order = Order.create(userId, orderItems, orderAmount);
+    public Order createOrder(UserId userId, List<OrderItem> orderItems, OrderAmount orderAmount,Long couponId) {
+        Order order = Order.create(userId, orderItems, orderAmount,couponId);
         Order savedOrder = orderRepository.save(order);
         orderItemRepository.saveAll(orderItems, savedOrder.getId());
 

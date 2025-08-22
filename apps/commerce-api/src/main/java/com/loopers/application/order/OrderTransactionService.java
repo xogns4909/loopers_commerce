@@ -34,7 +34,7 @@ public class OrderTransactionService {
         if (order == null || order.getStatus().isFinal()) return;
         if (!order.getStatus().canPayFail()) return;
         orderService.markPaymentFailed(order, event.reason());
-        compensationService.reverseFor(order.getId()); // 재고/쿠폰 보상
+        compensationService.reverseFor(order);
         log.info("주문 결제 실패 처리됨 - orderId: {}, reason: {}", event.orderId(), event.reason());
     }
 }

@@ -35,7 +35,7 @@ public class OrderProcessor {
         BigDecimal finalAmount = couponService.apply(command.userId(), command.couponId(), originalAmount);
 
 
-        Order order = orderService.createOrder(command.userId(), items, OrderAmount.of(finalAmount));
+        Order order = orderService.createOrder(command.userId(), items, OrderAmount.of(finalAmount),command.couponId());
 
         // 요청 히스토리: RECEIVED (이름만 바꿨고 의미는 '요청 접수')
         orderRequestHistoryService.saveReceived(command.idempotencyKey(), command.userId().value(), order.getId());

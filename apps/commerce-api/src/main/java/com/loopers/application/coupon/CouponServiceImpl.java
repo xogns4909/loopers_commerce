@@ -34,34 +34,20 @@ public class CouponServiceImpl implements CouponService {
         return discountAmount;
     }
 
+
     @Override
     @Transactional
-    public void releaseByOrderId(Long orderId) {
-        log.info("쿠폰 해제 시작 - orderId: {}", orderId);
+    public void releaseSpecificCoupon(Long couponId, String userId) {
+        log.info("특정 쿠폰 해제 시작 - couponId: {}, userId: {}", couponId, userId);
         try {
-            // 🔥 현실적인 해결책: 주문-쿠폰 연결 정보가 없는 상황에서의 차선책
-            // 
-            // 이상적인 해결책:
-            // 1. Order 엔티티에 usedCouponId 필드 추가
-            // 2. 또는 OrderCoupon 연결 테이블 생성
-            // 3. 쿠폰 사용 이력 테이블 생성
-            //
-            // 현재 상황에서의 차선책:
-            // - CompensationService에서 Order 정보와 함께 쿠폰 정보를 전달받는 방식
-            // - 또는 최근 사용된 쿠폰 중에서 추정하여 해제 (위험함)
-            
-            log.warn("쿠폰 해제 로직 제한적 구현 - orderId: {} " +
-                     "(완전한 구현을 위해서는 주문-쿠폰 연결 스키마 개선 필요)", orderId);
-                     
-
-            
-            log.info("쿠폰 해제 완료 (제한적) - orderId: {}", orderId);
+            releaseCoupon(couponId, userId);
+            log.info("특정 쿠폰 해제 성공 - couponId: {}, userId: {}", couponId, userId);
         } catch (Exception e) {
-            log.error("쿠폰 해제 실패 - orderId: {}, error: {}", orderId, e.getMessage(), e);
-
+            log.error("특정 쿠폰 해제 실패 - couponId: {}, userId: {}, error: {}", 
+                     couponId, userId, e.getMessage(), e);
+            throw e; // 보상 트랜잭션에서는 예외를 다시 던져서 실패를 알림
         }
     }
-    
 
     @Transactional
     public void releaseCoupon(Long couponId, String userId) {

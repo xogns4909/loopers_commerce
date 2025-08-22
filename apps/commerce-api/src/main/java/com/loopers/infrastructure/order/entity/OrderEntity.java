@@ -25,6 +25,9 @@ public class OrderEntity extends BaseEntity {
     private OrderStatus status;
 
     private Long amount;
+    
+
+    private Long usedCouponId;
 
     protected OrderEntity() {}
 
@@ -34,6 +37,7 @@ public class OrderEntity extends BaseEntity {
         entity.userId = order.getUserId().value();
         entity.status = order.getStatus();
         entity.amount = order.getAmount().value().longValue();
+        entity.usedCouponId = order.getUsedCouponId();
         return entity;
     }
 
@@ -43,7 +47,8 @@ public class OrderEntity extends BaseEntity {
             UserId.of(userId),
             List.of(),
             status,
-            new OrderAmount(BigDecimal.valueOf(amount)
-        ));
+            new OrderAmount(BigDecimal.valueOf(amount)),
+            usedCouponId
+        );
     }
 }

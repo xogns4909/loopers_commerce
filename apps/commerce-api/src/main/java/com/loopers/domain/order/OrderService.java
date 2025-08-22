@@ -13,7 +13,9 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 
 public interface OrderService {
-    Order createOrder(UserId userId, List<OrderItem> orderItems, OrderAmount amount);
+
+    Order createOrder(UserId userId, List<OrderItem> orderItems, OrderAmount amount, Long usedCouponId);
+    
     Order getOrder(Long orderId);
     void markPaid(Order order, Long paymentId);
     void markPaymentFailed(Order order, String reason);

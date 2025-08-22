@@ -15,24 +15,27 @@ public class Order {
     private final UserId userId;
     private final List<OrderItem> items;
     private final OrderAmount amount;
-    private  OrderStatus status;
+    private OrderStatus status;
 
-    private Order(Long id, UserId userId, List<OrderItem> items, OrderAmount amount, OrderStatus status) {
+    private final Long usedCouponId;
+
+    private Order(Long id, UserId userId, List<OrderItem> items, OrderAmount amount, OrderStatus status, Long usedCouponId) {
         this.id = id;
         this.userId = userId;
         this.items = List.copyOf(items);
         this.amount = amount;
         this.status = status;
+        this.usedCouponId = usedCouponId;
     }
 
-    public static Order create(UserId userId, List<OrderItem> items,OrderAmount orderAmount) {
+
+    public static Order create(UserId userId, List<OrderItem> items, OrderAmount orderAmount, Long usedCouponId) {
         validate(userId, items);
-
-        return new Order(null, userId, items, orderAmount, OrderStatus.PENDING);
+        return new Order(null, userId, items, orderAmount, OrderStatus.PENDING, usedCouponId);
     }
 
-    public static Order reconstruct(Long id, UserId userId, List<OrderItem> items, OrderStatus status, OrderAmount amount) {
-        return new Order(id, userId, items, amount, status);
+    public static Order reconstruct(Long id, UserId userId, List<OrderItem> items, OrderStatus status, OrderAmount amount, Long usedCouponId) {
+        return new Order(id, userId, items, amount, status, usedCouponId);
     }
 
     public void complete() {

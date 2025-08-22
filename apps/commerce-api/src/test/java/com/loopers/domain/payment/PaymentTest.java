@@ -27,7 +27,7 @@ class PaymentTest {
 
     private Order createOrder() {
         OrderItem item = new OrderItem(1L, 2, Price.of(BigDecimal.valueOf(1000)));
-        Order order = Order.reconstruct(1L,userId, List.of(item), OrderStatus.PENDING, new OrderAmount(BigDecimal.valueOf(2000)));
+        Order order = Order.reconstruct(1L,userId, List.of(item), OrderStatus.PENDING, new OrderAmount(BigDecimal.valueOf(2000)),null);
         return order;
     }
 
