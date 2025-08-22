@@ -3,11 +3,11 @@ package com.loopers.domain.product;
 import com.loopers.application.product.ProductInfo;
 import com.loopers.application.product.ProductSearchCommand;
 import com.loopers.domain.product.model.Product;
-import java.util.Optional;
 import org.springframework.data.domain.Page;
 
-public interface ProductRepository {
+import java.util.Optional;
 
+public interface ProductRepository {
     Page<ProductInfo> searchByCondition(ProductSearchCommand command);
 
     Optional<ProductInfo> findProductInfoById(Long id);
@@ -16,7 +16,7 @@ public interface ProductRepository {
 
     void save(Product product);
 
-    Optional<Product> findById(Long aLong);
+    Optional<Product> findById(Long productId);
 
-    Optional<Product>  findWithPessimisticLockById(Long productId);
+    Optional<Product> findWithPessimisticLockById(Long productId);
 }
