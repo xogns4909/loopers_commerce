@@ -16,13 +16,13 @@ public class OrderRequestHistoryServiceImpl implements OrderRequestHistoryServic
     private final OrderRequestHistoryRepository repository;
 
     @Override
-    public void savePending(String idempotencyKey, String userId, Long orderId) {
+    public void saveReceived(String idempotencyKey, String userId, Long orderId) {
         OrderRequestHistory history = OrderRequestHistory.of(idempotencyKey, userId, orderId);
         repository.save(history);
     }
 
     @Override
-    public void markSuccess(String idempotencyKey) {
+    public void markAccepted(String idempotencyKey) {
         OrderRequestHistory history = findOrThrow(idempotencyKey);
         repository.save(history.markSuccess());
     }

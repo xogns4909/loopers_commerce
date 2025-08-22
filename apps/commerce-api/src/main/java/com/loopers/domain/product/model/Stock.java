@@ -34,4 +34,11 @@ public class Stock {
         }
         return new Stock(this.quantity - quantity);
     }
+
+    public Stock plus(int quantity) {
+        if (quantity < 0) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "복원할 재고는 0 이상이어야 합니다.");
+        }
+        return new Stock(this.quantity + quantity);
+    }
 }

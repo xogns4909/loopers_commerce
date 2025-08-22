@@ -9,7 +9,6 @@ import com.loopers.domain.product.model.ProductStatus;
 import com.loopers.domain.user.model.User;
 import com.loopers.infrastructure.brand.Entity.BrandEntity;
 import com.loopers.infrastructure.brand.JpaBrandRepository;
-import com.loopers.infrastructure.point.JpaPointRepository;
 import com.loopers.infrastructure.product.JPAProductRepository;
 import com.loopers.infrastructure.product.entity.ProductEntity;
 import com.loopers.infrastructure.user.JpaUserRepository;
@@ -117,7 +116,7 @@ class OrderE2ETest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         ApiResponse<OrderResponse> body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.data().status().name()).isEqualTo("COMPLETED");
+        assertThat(body.data().status().name()).isEqualTo("PENDING");
         assertThat(body.data().amount()).isEqualTo(BigDecimal.valueOf(20000));
     }
 
