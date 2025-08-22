@@ -7,6 +7,7 @@ import com.loopers.domain.payment.model.Payment;
 import com.loopers.infrastructure.payment.pg.PgPaymentGateway;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentStatusResponse;
 import com.loopers.support.error.CoreException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -24,8 +25,8 @@ public class PaymentScheduler {
     private final PgPaymentGateway pgGateway;
     private final ApplicationEventPublisher eventPublisher;
 
-    // 테스트용: 10초마다
-    @Scheduled(cron = "*/10 * * * * *")
+    @Scheduled(cron = "${payment.scheduler.sweep.cron:0 */5 * * * *}")
+    @Transactional
     public void sweepPending() {
         log.info("결제 PENDING 스윕 시작");
 
