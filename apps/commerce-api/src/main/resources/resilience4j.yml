@@ -1,0 +1,82 @@
+resilience4j:
+  # Circuit Breaker 설정
+  circuitbreaker:
+    instances:
+      pg-client:
+        failure-rate-threshold: 50          # 실패율 50% 이상 시 Circuit Open
+        slow-call-rate-threshold: 70        # 느린 호출 70% 이상
+        slow-call-duration-threshold: 3s    # 3초 이상을 느린 호출로 간주
+        minimum-number-of-calls: 5          # 최소 5회 호출 후 Circuit 상태 판단
+        sliding-window-size: 10             # 10개 호출을 기준으로 슬라이딩 윈도우
+        sliding-window-type: COUNT_BASED    # 개수 기반 윈도우
+        wait-duration-in-open-state: 30s    # Circuit Open 후 30초 대기
+        permitted-number-of-calls-in-half-open-state: 3  # Half-Open에서 3회 시도
+        automatic-transition-from-open-to-half-open-enabled: true
+        
+  # Retry 설정  
+  retry:
+    instances:
+      pg-client:
+        max-attempts: 3                     # 최대 3회 시도 (1회 원본 + 2회 재시도)
+        wait-duration: 1s                   # 1초 간격
+        exponential-backoff-multiplier: 2   # 지수 백오프 (1s, 2s, 4s)
+        randomized-delay-factor: 0.2        # ±20% 지터 추가
+        retry-exceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+          - feign.RetryableException
+          - java.net.SocketException
+          - feign.FeignException.InternalServerError
+          - feign.FeignException.BadGateway
+          - feign.FeignException.ServiceUnavailable
+          - feign.FeignException.GatewayTimeout
+          - feign.FeignException.TooManyRequests
+        ignore-exceptions:
+          - feign.FeignException.BadRequest
+          - feign.FeignException.Unauthorized
+          - feign.FeignException.Forbidden
+          - feign.FeignException.NotFound
+          - feign.FeignException.UnprocessableEntity
+          
+  # Timeout 설정
+  timelimiter:
+    instances:
+      pg-client:
+        timeout-duration: 5s                # 전체 실행 시간 제한 (재시도 포함)
+        cancel-running-future: true
+
+  # Bulkhead 설정 (동시 실행 제한)
+  bulkhead:
+    instances:
+      pg-client:
+        max-concurrent-calls: 20            # 최대 20개 동시 호출
+        max-wait-duration: 1s               # 1초 대기
+
+# 메트릭 활성화
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,retries,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        resilience4j.circuitbreaker.calls: true
+        resilience4j.retry.calls: true
+        http.server.requests: true
+
+# 로깅 설정 (Resilience4j 디버깅용)
+logging:
+  level:
+    io.github.resilience4j.circuitbreaker: DEBUG
+    io.github.resilience4j.retry: DEBUG
+    com.loopers.domain.payment.strategy: DEBUG
