@@ -38,15 +38,9 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional
     public void releaseSpecificCoupon(Long couponId, String userId) {
-        log.info("특정 쿠폰 해제 시작 - couponId: {}, userId: {}", couponId, userId);
-        try {
-            releaseCoupon(couponId, userId);
-            log.info("특정 쿠폰 해제 성공 - couponId: {}, userId: {}", couponId, userId);
-        } catch (Exception e) {
-            log.error("특정 쿠폰 해제 실패 - couponId: {}, userId: {}, error: {}", 
-                     couponId, userId, e.getMessage(), e);
-            throw e; // 보상 트랜잭션에서는 예외를 다시 던져서 실패를 알림
-        }
+        releaseCoupon(couponId, userId);
+
+
     }
 
     @Transactional
@@ -54,14 +48,14 @@ public class CouponServiceImpl implements CouponService {
 
         UserCoupon coupon = userCouponRepository.findByIdAndUserId(couponId, userId)
             .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "쿠폰을 찾을 수 없습니다."));
-        
+
         UserCoupon releasedCoupon = coupon.release();
         userCouponRepository.save(releasedCoupon);
 
     }
 
-    public UserCoupon saveUserCoupon(UserCoupon userCoupon){
-        return  userCouponRepository.save(userCoupon);
+    public UserCoupon saveUserCoupon(UserCoupon userCoupon) {
+        return userCouponRepository.save(userCoupon);
     }
 
     @Override
