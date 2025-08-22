@@ -42,6 +42,17 @@ public class PointServiceImpl implements PointService {
     }
 
     @Override
+    @HandleConcurrency(message = "포인트 복구에 실패했습니다. 다시 시도해주세요")
+    public void restore(UserId userId, PaymentAmount amount) {
+
+        Point point = findByUserId(userId.value());
+        if (point != null) {
+            Point restored = point.charge(Balance.of(amount.getAmount()));
+            pointRepository.save(restored);
+        }
+    }
+
+    @Override
     public Point findByUserId(String userId) {
         return pointRepository.findByUserId(userId).orElse(null);
     }

@@ -15,8 +15,6 @@ public interface ProductService {
     ProductInfo getProduct(Long productId);
 
     void checkAndDeduct(List<OrderItemCommand> items);
-
-
-
-
+    
+    void restoreStock(Long productId, int quantity);
 }

@@ -9,6 +9,7 @@ import com.loopers.interfaces.api.point.PointResponse;
 public interface PointService {
     boolean hasEnough(UserId userId, PaymentAmount amount);
     void deduct(UserId userId, PaymentAmount amount);
+    void restore(UserId userId, PaymentAmount amount);
     Point findByUserId(String userId);
     PointResponse charge(AddPointCommand addPointCommand);
 }
