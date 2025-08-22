@@ -1,6 +1,7 @@
 package com.loopers.domain.payment.strategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -17,6 +18,7 @@ import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.payment.pg.PgPaymentGateway;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentRequest;
 import com.loopers.infrastructure.payment.pg.dto.PgPaymentResponse;
+import com.loopers.support.error.CoreException;
 import feign.FeignException;
 import feign.Request;
 import java.math.BigDecimal;
@@ -57,12 +59,14 @@ class CardPaymentStrategyTest {
     void setUp() {
         ReflectionTestUtils.setField(cardPaymentStrategy, "callbackUrl", "http://localhost:8080/api/v1/payments/callback");
         
-        paymentCommand = PaymentCommand.builder()
-            .userId(UserId.of("testUser"))
-            .orderId(100L)
-            .amount(OrderAmount.of(BigDecimal.valueOf(10000)))
-            .paymentMethod(PaymentMethod.CARD)
-            .build();
+        paymentCommand = new PaymentCommand(
+            UserId.of("testUser"),
+            100L,
+            "CARD",
+            "1234-5678-9012-3456",
+            OrderAmount.of(BigDecimal.valueOf(10000)),
+            PaymentMethod.CARD
+        );
     }
 
     @Nested
@@ -141,19 +145,22 @@ class CardPaymentStrategyTest {
         }
 
         @Test
-        @DisplayName("PG 네트워크 에러 시 실패 이벤트 발행")
-        void pg_network_error_publishes_failed_event() {
+        @DisplayName("PG 네트워크 에러 시 실패 이벤트 발행 후 예외 재발생")
+        void pg_network_error_publishes_failed_event_and_rethrows_exception() {
             // given
             when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
             Request request = Request.create(Request.HttpMethod.POST, "url", Collections.emptyMap(), null, StandardCharsets.UTF_8, null);
+            FeignException.InternalServerError exception = new FeignException.InternalServerError("서버 오류", request, null, Collections.emptyMap());
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
-                .thenThrow(new FeignException.InternalServerError("서버 오류", request, null, Collections.emptyMap()));
+                .thenThrow(exception);
 
-            // when
-            cardPaymentStrategy.pay(paymentCommand);
+            // when & then
+            assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
+                .isInstanceOf(FeignException.InternalServerError.class)
+                .hasMessage("서버 오류");
 
-            // then
+            // 실패 이벤트도 발행되어야 함
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
             verify(eventPublisher).publishEvent(eventCaptor.capture());
             
@@ -171,8 +178,10 @@ class CardPaymentStrategyTest {
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
                 .thenThrow(new RuntimeException("예상치 못한 오류"));
 
-            // when
-            cardPaymentStrategy.pay(paymentCommand);
+            // when & then
+            assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("예상치 못한 오류");
 
             // then
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);

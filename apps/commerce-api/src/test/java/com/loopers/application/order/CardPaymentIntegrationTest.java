@@ -1,6 +1,7 @@
 package com.loopers.application.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -90,8 +91,10 @@ class CardPaymentIntegrationTest {
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 서버 오류"));
 
-        // when
-        cardPaymentStrategy.pay(paymentCommand);
+        // when & then
+        assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
+            .isInstanceOf(CoreException.class)
+            .hasMessage("PG 호출 실패(CB/Retry 이후): 서버 오류");
 
         // then:
         verify(paymentService).createInitiatedPayment(paymentCommand);
@@ -108,8 +111,10 @@ class CardPaymentIntegrationTest {
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 타임아웃"));
 
-        // when
-        cardPaymentStrategy.pay(paymentCommand);
+        // when & then
+        assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
+            .isInstanceOf(CoreException.class)
+            .hasMessage("PG 호출 실패(CB/Retry 이후): 타임아웃");
 
         // then
         verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 무효");

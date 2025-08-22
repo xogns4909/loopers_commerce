@@ -20,15 +20,17 @@ public class OrderEventHandler {
 
     private final OrderTransactionService orderTransactionService;
 
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onPaymentCompleted(PaymentCompletedEvent event) {
         orderTransactionService.handlePaymentCompleted(event);
     }
 
-    @EventListener
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMPLETION)
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMPLETION, fallbackExecution = true)
     public void onPaymentFailed(PaymentFailedEvent event) {
         log.info("PaymentFailedEvent 처리 시작 - orderId: {}, paymentId: {}", event.orderId(), event.paymentId());
         orderTransactionService.handlePaymentFailed(event);
     }
 }
+
