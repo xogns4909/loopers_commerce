@@ -27,7 +27,7 @@ class PaymentTest {
 
     private Order createOrder() {
         OrderItem item = new OrderItem(1L, 2, Price.of(BigDecimal.valueOf(1000)));
-        Order order = Order.reconstruct(1L,userId, List.of(item), OrderStatus.PENDING, new OrderAmount(BigDecimal.valueOf(2000)));
+        Order order = Order.reconstruct(1L,userId, List.of(item), OrderStatus.PENDING, new OrderAmount(BigDecimal.valueOf(2000)),null);
         return order;
     }
 
@@ -40,7 +40,7 @@ class PaymentTest {
         void create_success() {
             Order order = createOrder();
 
-            Payment payment = Payment.complete(order.getId(),order.getUserId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT);
+            Payment payment = Payment.create(order.getUserId(),order.getId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT);
 
 
 
@@ -55,7 +55,7 @@ class PaymentTest {
         void nullOrderId_throws() {
             Order order = createOrder();
 
-            assertThatThrownBy(() ->Payment.complete(null,order.getUserId(),PaymentAmount.from(order.getAmount()), PaymentMethod.POINT))
+            assertThatThrownBy(() ->Payment.create(order.getUserId(),null,PaymentAmount.from(order.getAmount()), PaymentMethod.POINT))
                 .isInstanceOf(CoreException.class)
                 .hasMessageContaining("주문 ID가 지정되지 않았습니다.");
         }
@@ -65,7 +65,7 @@ class PaymentTest {
         void nullMethod_throws() {
             Order order = createOrder();
 
-            assertThatThrownBy(() -> Payment.complete(order.getId(),order.getUserId(),PaymentAmount.from(order.getAmount()),null))
+            assertThatThrownBy(() -> Payment.create(order.getUserId(),order.getId(),PaymentAmount.from(order.getAmount()),null))
                 .isInstanceOf(CoreException.class)
                 .hasMessageContaining("결제 수단이 유효하지 않습니다.");
         }
