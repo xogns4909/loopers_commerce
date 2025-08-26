@@ -91,14 +91,12 @@ class CardPaymentIntegrationTest {
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 서버 오류"));
 
-        // when & then
-        assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
-            .isInstanceOf(CoreException.class)
-            .hasMessage("PG 호출 실패(CB/Retry 이후): 서버 오류");
+        // when
+        cardPaymentStrategy.pay(paymentCommand);
 
         // then:
         verify(paymentService).createInitiatedPayment(paymentCommand);
-        verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
+        verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 실패");
         verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
     }
 
@@ -111,13 +109,11 @@ class CardPaymentIntegrationTest {
         when(pgGateway.requestPayment(eq(USER_ID), any(PgPaymentRequest.class)))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 타임아웃"));
 
-        // when & then
-        assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
-            .isInstanceOf(CoreException.class)
-            .hasMessage("PG 호출 실패(CB/Retry 이후): 타임아웃");
+        // when
+        cardPaymentStrategy.pay(paymentCommand);
 
         // then
-        verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 무효");
+        verify(paymentService).updateToFailed(PAYMENT_ID, "PG 요청 실패");
         verify(eventPublisher).publishEvent(any(com.loopers.domain.payment.event.PaymentFailedEvent.class));
     }
 

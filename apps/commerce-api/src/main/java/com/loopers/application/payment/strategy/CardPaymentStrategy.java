@@ -37,29 +37,32 @@ public class CardPaymentStrategy implements PaymentStrategy {
     public void pay(PaymentCommand cmd) {
         Long paymentId = paymentService.createInitiatedPayment(cmd); // PENDING
         log.info("결제 PENDING 생성 - paymentId: {}, orderId: {}", paymentId, cmd.orderId());
+        
         try {
             PgPaymentRequest req = PgPaymentRequest.of("ORDER_" + cmd.orderId(), cmd.CardType(), cmd.CardNo(),
                 cmd.amount().value().longValue(), callbackUrl);
             PgPaymentResponse resp = pg.requestPayment(cmd.userId().value(), req);
 
             if (resp.transactionKey() == null || resp.transactionKey().isEmpty()) {
-                publishFailedEvent(cmd, paymentId, "PG 요청 무효","PG 응답에 transactionKey가 없습니다");
+                handlePaymentFailure(cmd, paymentId, "PG 응답 무효", "PG 응답에 transactionKey가 없습니다");
+                return;
             }
 
             paymentService.updateToProcessing(paymentId, resp.transactionKey());
             log.info("PG 접수 성공 - paymentId={}, txKey={}", paymentId, resp.transactionKey());
+            
         } catch (Exception e) {
-            publishFailedEvent(cmd, paymentId, "PG 요청 무효", e.getMessage());
-            throw  e;
+            handlePaymentFailure(cmd, paymentId, "PG 요청 실패", e.getMessage());
+
         }
     }
 
-    private void publishFailedEvent(PaymentCommand cmd, Long paymentId, String reason, String message) {
-
+    private void handlePaymentFailure(PaymentCommand cmd, Long paymentId, String reason, String message) {
         paymentService.updateToFailed(paymentId, reason);
-
+        
         eventPublisher.publishEvent(new PaymentFailedEvent(
             paymentId, cmd.orderId(), cmd.userId(), reason, message
         ));
+
     }
 }
