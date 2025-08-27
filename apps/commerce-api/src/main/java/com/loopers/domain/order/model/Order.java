@@ -4,11 +4,13 @@ import com.loopers.domain.discount.UserCoupon;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
 
 @Getter
+@Builder
 public class Order {
 
     private final Long id;
