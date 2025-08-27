@@ -1,33 +1,36 @@
 package com.loopers.application.like;
 
-import com.loopers.application.product.ProductInfo;
 import com.loopers.domain.like.LikeService;
 import com.loopers.domain.like.LikeResult;
+import com.loopers.domain.like.event.ProductLikedEvent;
+import com.loopers.domain.like.event.ProductUnlikedEvent;
 import com.loopers.domain.product.ProductService;
-import com.loopers.domain.product.like.ProductLikeService;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.interfaces.api.like.LikeRequest;
 import com.loopers.interfaces.api.like.LikeResponse;
 import com.loopers.interfaces.api.like.LikedProductResponse;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class LikeFacade {
 
     private final LikeService likeService;
     private final ProductService productService;
-    private final ProductLikeService productLikeService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public LikeResponse like(LikeRequest request) {
-
+        
         if(!productService.existsProduct(request.productId())){
             throw new CoreException(ErrorType.NOT_FOUND);
         }
@@ -35,9 +38,10 @@ public class LikeFacade {
         LikeCommand command = toCommand(request);
         LikeResult result = likeService.like(command);
 
-
         if (result == LikeResult.LIKED) {
-            productLikeService.incrementLike(request.productId());
+            eventPublisher.publishEvent(
+                ProductLikedEvent.of(request.productId(), request.userId(), "temp-correlation-id")
+            );
         }
 
         return switch (result) {
@@ -49,12 +53,14 @@ public class LikeFacade {
 
     @Transactional
     public LikeResponse unlike(LikeRequest request) {
+        
         LikeCommand command = toCommand(request);
         LikeResult result = likeService.unlike(command);
 
-
         if (result == LikeResult.UNLIKED) {
-            productLikeService.decrementLike(request.productId());
+            eventPublisher.publishEvent(
+                ProductUnlikedEvent.of(request.productId(), request.userId(), "temp-correlation-id")
+            );
         }
 
         return switch (result) {

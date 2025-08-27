@@ -1,11 +1,14 @@
 package com.loopers.domain.like;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.loopers.application.like.LikeCommand;
 import com.loopers.application.like.LikeServiceImpl;
+import com.loopers.domain.like.event.ProductLikedEvent;
+import com.loopers.domain.like.event.ProductUnlikedEvent;
 import com.loopers.domain.like.model.Like;
 import com.loopers.domain.user.model.UserId;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +47,7 @@ class LikeServiceTest {
         // then
         assertThat(result).isEqualTo(LikeResult.LIKED);
         verify(likeRepository).save(Like.create(userId, productId));
+        verify(publisher).publishEvent(any(ProductLikedEvent.class));
     }
 
     @Test
@@ -79,6 +83,7 @@ class LikeServiceTest {
         // then
         assertThat(result).isEqualTo(LikeResult.UNLIKED);
         verify(likeRepository).delete(userId, productId);
+        verify(publisher).publishEvent(any(ProductUnlikedEvent.class));
     }
 
     @Test

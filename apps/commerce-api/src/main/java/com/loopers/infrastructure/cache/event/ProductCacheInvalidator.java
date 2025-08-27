@@ -29,7 +29,7 @@ public class ProductCacheInvalidator implements CacheInvalidator<ProductEvent> {
             }
             case STOCK_CHANGED, PRICE_CHANGED, LIKE_CHANGED -> {
                 cache.evict(keyGenerator.createDetailKey(e.id()));
-                cache.bumpNamespace("product"); // 상품 네임스페이스 전체 무효화
+                cache.bumpNamespace("product");
             }
         }
     }
