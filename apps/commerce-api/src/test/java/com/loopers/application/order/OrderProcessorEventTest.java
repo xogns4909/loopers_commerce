@@ -14,12 +14,12 @@ import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.model.Price;
 import com.loopers.domain.user.model.UserId;
+import com.loopers.infrastructure.event.DomainEventBridge;
 import java.math.BigDecimal;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.context.ApplicationEventPublisher;
 
 class OrderProcessorEventTest {
 
@@ -30,10 +30,10 @@ class OrderProcessorEventTest {
         CouponService couponService = mock(CouponService.class);
         OrderService orderService = mock(OrderService.class);
         OrderRequestHistoryService history = mock(OrderRequestHistoryService.class);
-        ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
+        DomainEventBridge eventBridge = mock(DomainEventBridge.class);
 
         // SUT
-        OrderProcessor sut = new OrderProcessor(productService, couponService, orderService, history, publisher);
+        OrderProcessor sut = new OrderProcessor(productService, couponService, orderService, history, eventBridge);
 
         // given
         UserId userId = UserId.of("u1");
@@ -57,7 +57,7 @@ class OrderProcessorEventTest {
 
         // then:
         ArgumentCaptor<OrderCreatedEvent> cap = ArgumentCaptor.forClass(OrderCreatedEvent.class);
-        verify(publisher, times(1)).publishEvent(cap.capture());
+        verify(eventBridge, times(1)).publish(cap.capture());
         OrderCreatedEvent evt = cap.getValue();
 
         Assertions.assertThat(evt.orderId()).isEqualTo(10L);

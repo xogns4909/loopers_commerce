@@ -11,13 +11,14 @@ import com.loopers.domain.like.event.ProductLikedEvent;
 import com.loopers.domain.like.event.ProductUnlikedEvent;
 import com.loopers.domain.like.model.Like;
 import com.loopers.domain.user.model.UserId;
+import com.loopers.infrastructure.event.DomainEventBridge;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import com.loopers.infrastructure.event.DomainEventBridge;
 
 @ExtendWith(MockitoExtension.class)
 class LikeServiceTest {
@@ -26,7 +27,7 @@ class LikeServiceTest {
     private LikeRepository likeRepository;
 
     @Mock
-    private ApplicationEventPublisher publisher;
+    private DomainEventBridge eventBridge;
 
     @InjectMocks
     private LikeServiceImpl likeService;
@@ -47,7 +48,7 @@ class LikeServiceTest {
         // then
         assertThat(result).isEqualTo(LikeResult.LIKED);
         verify(likeRepository).save(Like.create(userId, productId));
-        verify(publisher).publishEvent(any(ProductLikedEvent.class));
+        verify(eventBridge).publish(any(ProductLikedEvent.class));
     }
 
     @Test
@@ -83,7 +84,7 @@ class LikeServiceTest {
         // then
         assertThat(result).isEqualTo(LikeResult.UNLIKED);
         verify(likeRepository).delete(userId, productId);
-        verify(publisher).publishEvent(any(ProductUnlikedEvent.class));
+        verify(eventBridge).publish(any(ProductUnlikedEvent.class));
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.loopers.domain.order.model.OrderAmount;
 import com.loopers.domain.order.model.OrderItem;
 import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.model.Price;
+import com.loopers.infrastructure.event.DomainEventBridge;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class OrderProcessor {
     private final CouponService couponService;
     private final OrderService orderService;
     private final OrderRequestHistoryService orderRequestHistoryService;
-    private final ApplicationEventPublisher publisher;
+    private final DomainEventBridge eventBridge;
 
     @Transactional
     public Order process(OrderCommand command) {
@@ -40,7 +41,7 @@ public class OrderProcessor {
 
         Order order = orderService.createOrder(command.userId(), items, OrderAmount.of(finalAmount),command.couponId());
 
-        publisher.publishEvent(OrderCreatedEvent.of(order.getId(), command.userId(), items));
+        eventBridge.publish(OrderCreatedEvent.of(order.getId(), command.userId(), items));
 
         orderRequestHistoryService.saveReceived(command.idempotencyKey(), command.userId().value(), order.getId());
         return order;

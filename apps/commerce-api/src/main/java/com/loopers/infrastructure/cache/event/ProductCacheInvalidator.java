@@ -19,9 +19,7 @@ public class ProductCacheInvalidator implements CacheInvalidator<ProductEvent> {
     private final CacheService cache;
     private final ProductCacheKeyGenerator keyGenerator;
 
-    @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Override
     public void on(ProductEvent e) {
         switch (e.type()) {
             case DETAIL_CHANGED -> {
