@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,18 +32,16 @@ class OrderFacadeTest {
 
     private OrderFacade orderFacade;
 
-    private ApplicationEventPublisher publisher;
-
     private static final String CARD_TYPE = "SAMSUNG";
     private static final String CARD_NO = "1234-1234-1234-1234";
 
     @BeforeEach
     void setUp() {
         orderService = mock(OrderService.class);
+        paymentService = mock(PaymentService.class);
         orderProcessor = mock(OrderProcessor.class);
         orderRequestHistoryService = mock(OrderRequestHistoryService.class);
-        publisher = mock(ApplicationEventPublisher.class);
-        orderFacade = new OrderFacade(orderService, orderRequestHistoryService, orderProcessor,publisher);
+        orderFacade = new OrderFacade(paymentService, orderService, orderRequestHistoryService, orderProcessor);
     }
 
     @Test

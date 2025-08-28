@@ -39,7 +39,8 @@ public class CardPaymentStrategy implements PaymentStrategy {
         log.info("결제 PENDING 생성 - paymentId: {}, orderId: {}", paymentId, cmd.orderId());
         
         try {
-            PgPaymentRequest req = PgPaymentRequest.of("ORDER_" + cmd.orderId(), cmd.cardType(), cmd.cardNo(), cmd.amount().value().longValue(), callbackUrl);
+            PgPaymentRequest req = PgPaymentRequest.of("ORDER_" + cmd.orderId(), cmd.CardType(), cmd.CardNo(),
+                cmd.amount().value().longValue(), callbackUrl);
             PgPaymentResponse resp = pg.requestPayment(cmd.userId().value(), req);
 
             if (resp.transactionKey() == null || resp.transactionKey().isEmpty()) {

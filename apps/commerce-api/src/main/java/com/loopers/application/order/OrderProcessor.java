@@ -26,9 +26,10 @@ public class OrderProcessor {
 
     @Transactional
     public Order process(OrderCommand command) {
-
+        // 재고 차감 (동시성 고려: 비관/낙관락은 ProductService 내부에서 처리)
         productService.checkAndDeduct(command.items());
 
+        // 실제 상품 가격으로 OrderItem 생성
         List<OrderItem> items = createOrderItemsWithRealPrice(command.items());
         BigDecimal originalAmount = OrderAmount.from(items).value();
         BigDecimal finalAmount = couponService.apply(command.userId(), command.couponId(), originalAmount);
@@ -36,7 +37,7 @@ public class OrderProcessor {
 
         Order order = orderService.createOrder(command.userId(), items, OrderAmount.of(finalAmount),command.couponId());
 
-
+        // 요청 히스토리: RECEIVED (이름만 바꿨고 의미는 '요청 접수')
         orderRequestHistoryService.saveReceived(command.idempotencyKey(), command.userId().value(), order.getId());
         return order;
     }
@@ -48,7 +49,7 @@ public class OrderProcessor {
     }
 
     private OrderItem createOrderItemWithRealPrice(OrderCommand.OrderItemCommand itemCommand) {
-
+        // 실제 상품 정보 조회해서 가격 설정
         ProductInfo product = productService.getProduct(itemCommand.productId());
         return new OrderItem(
                 itemCommand.productId(), 
