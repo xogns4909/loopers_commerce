@@ -27,7 +27,7 @@ public class OrderEventHandler {
     }
 
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMPLETION, fallbackExecution = true)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMPLETION)
     public void onPaymentFailed(PaymentFailedEvent event) {
         log.info("PaymentFailedEvent 처리 시작 - orderId: {}, paymentId: {}", event.orderId(), event.paymentId());
         orderTransactionService.handlePaymentFailed(event);
