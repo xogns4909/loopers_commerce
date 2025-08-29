@@ -1,7 +1,8 @@
 package com.loopers.infrastructure.cache.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.loopers.application.cache.api.TypeRef;
+
+import com.loopers.infrastructure.cache.core.TypeRef;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import org.springframework.beans.factory.annotation.Qualifier;

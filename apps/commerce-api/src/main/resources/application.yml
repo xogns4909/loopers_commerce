@@ -28,6 +28,26 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# PG 설정
+pg:
+  base-url: http://localhost:8082
+  timeout:
+    connect: 1000
+    read: 3000
+  callback-url: http://localhost:8080/api/v1/payments/callback
+
+# Feign 클라이언트 설정
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 1000
+        readTimeout: 3000
+      pg-client:
+        connectTimeout: 500     # ms
+        readTimeout: 2000       # ms
+        loggerLevel: BASIC
+
 ---
 spring:
   config:

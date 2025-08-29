@@ -11,8 +11,7 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class OrderItemRepositoryImpl implements OrderItemRepository {
 
-        private final JpaOrderItemRepository jpaOrderItemRepository;
-
+    private final JpaOrderItemRepository jpaOrderItemRepository;
 
     @Override
     public void saveAll(List<OrderItem> items, Long orderId) {
@@ -20,5 +19,12 @@ public class OrderItemRepositoryImpl implements OrderItemRepository {
             .map(item -> OrderItemEntity.from(item, orderId))
             .toList();
         jpaOrderItemRepository.saveAll(entities);
+    }
+
+    @Override
+    public List<OrderItem> findByOrderId(Long orderId) {
+        return jpaOrderItemRepository.findByOrderId(orderId).stream()
+            .map(OrderItemEntity::toModel)
+            .toList();
     }
 }

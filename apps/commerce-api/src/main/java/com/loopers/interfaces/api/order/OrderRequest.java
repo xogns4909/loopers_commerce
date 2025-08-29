@@ -16,6 +16,10 @@ public class OrderRequest {
     private String paymentMethod;
     private Price price;
 
+    private String cardType;
+
+    private String cardNo;
+
     private Long couponId;
 
     public OrderRequest() {
@@ -45,6 +49,8 @@ public class OrderRequest {
             UserId.of(userId),
             itemCommands,
             PaymentMethod.valueOf(paymentMethod),
+            cardType,
+            cardNo,
             Price.of(total),
             idempotencyKey,
             couponId

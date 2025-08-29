@@ -40,10 +40,17 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
 
         ProductSortType sort = (c.sortType() == null) ? ProductSortType.LATEST : c.sortType();
+        
+
+        if (sort == ProductSortType.LIKES_DESC) {
+            return searchByLikesDesc(c, where);
+        }
+        
+
         OrderSpecifier<?> order = switch (sort) {
             case LATEST     -> product.createdAt.desc();
             case PRICE_DESC -> product.price.desc();
-            case LIKES_DESC -> productLike.likeCount.desc();
+            case LIKES_DESC -> productLike.likeCount.desc(); // 이 경우는 위에서 걸러짐
         };
 
         List<ProductInfo> content = queryFactory
@@ -67,6 +74,40 @@ public class ProductRepositoryImpl implements ProductRepository {
             .select(product.count())
             .from(product)
             .where(where)
+            .fetchOne();
+
+        return new PageImpl<>(content, c.pageable(), total == null ? 0 : total);
+    }
+
+
+    private Page<ProductInfo> searchByLikesDesc(ProductSearchCommand c, BooleanExpression baseWhere) {
+        BooleanExpression likesWhere = product.deletedAt.isNull();
+        if (c.brandId() != null) {
+            likesWhere = likesWhere.and(product.brandId.eq(c.brandId()));
+        }
+
+        List<ProductInfo> content = queryFactory
+            .select(new QProductInfo(
+                product.id,
+                product.name,
+                brand.name,
+                product.price,
+                productLike.likeCount.coalesce(0)
+            ))
+            .from(productLike)
+            .join(product).on(product.id.eq(productLike.productId))
+            .join(brand).on(product.brandId.eq(brand.id))
+            .where(likesWhere)
+            .orderBy(productLike.likeCount.desc())
+            .offset(c.pageable().getOffset())
+            .limit(c.pageable().getPageSize())
+            .fetch();
+
+        Long total = queryFactory
+            .select(productLike.count())
+            .from(productLike)
+            .join(product).on(product.id.eq(productLike.productId))
+            .where(likesWhere)
             .fetchOne();
 
         return new PageImpl<>(content, c.pageable(), total == null ? 0 : total);

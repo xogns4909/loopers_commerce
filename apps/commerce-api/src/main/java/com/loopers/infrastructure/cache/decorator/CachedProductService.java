@@ -75,11 +75,22 @@ public class CachedProductService implements ProductService {
             Product product = repo.findWithPessimisticLockById(item.productId())
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND));
             product.checkPurchasable(item.quantity());
-            product.deductStock(item.quantity());
-            repo.save(product);
+            Product deductedProduct = product.deductStock(item.quantity());
+            repo.save(deductedProduct);
 
             publisher.publishEvent(new ProductEvent(item.productId(), UpdateType.STOCK_CHANGED));
         }
+    }
+
+    @Override
+    @Transactional
+    public void restoreStock(Long productId, int quantity) {
+
+        Product product = repo.findWithPessimisticLockById(productId)
+            .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND));
+        Product restoredProduct = product.restoreStock(quantity);
+        repo.save(restoredProduct);
+        publisher.publishEvent(new ProductEvent(productId, UpdateType.STOCK_CHANGED));
 
     }
 

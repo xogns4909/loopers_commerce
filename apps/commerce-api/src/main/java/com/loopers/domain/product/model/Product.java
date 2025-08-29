@@ -32,14 +32,26 @@ public record Product(Long id,String name, String description, Price price, Prod
         }
     }
 
-    public void deductStock(int quantity) {
-        new Product(
+    public Product deductStock(int quantity) {
+        return new Product(
             this.id,
             this.name,
             this.description,
             this.price,
             this.productStatus,
             this.stock.minus(quantity),
+            this.brandId
+        );
+    }
+
+    public Product restoreStock(int quantity) {
+        return new Product(
+            this.id,
+            this.name,
+            this.description,
+            this.price,
+            this.productStatus,
+            this.stock.plus(quantity),
             this.brandId
         );
     }

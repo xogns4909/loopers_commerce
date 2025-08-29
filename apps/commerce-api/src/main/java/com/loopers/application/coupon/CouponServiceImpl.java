@@ -7,10 +7,13 @@ import com.loopers.domain.user.model.UserId;
 import com.loopers.support.annotation.HandleConcurrency;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
+import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CouponServiceImpl implements CouponService {
@@ -31,8 +34,28 @@ public class CouponServiceImpl implements CouponService {
         return discountAmount;
     }
 
-    public UserCoupon saveUserCoupon(UserCoupon userCoupon){
-        return  userCouponRepository.save(userCoupon);
+
+    @Override
+    @Transactional
+    public void releaseSpecificCoupon(Long couponId, String userId) {
+        releaseCoupon(couponId, userId);
+
+
+    }
+
+    @Transactional
+    public void releaseCoupon(Long couponId, String userId) {
+
+        UserCoupon coupon = userCouponRepository.findByIdAndUserId(couponId, userId)
+            .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "쿠폰을 찾을 수 없습니다."));
+
+        UserCoupon releasedCoupon = coupon.release();
+        userCouponRepository.save(releasedCoupon);
+
+    }
+
+    public UserCoupon saveUserCoupon(UserCoupon userCoupon) {
+        return userCouponRepository.save(userCoupon);
     }
 
     @Override
