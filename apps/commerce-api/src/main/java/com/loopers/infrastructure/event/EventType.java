@@ -7,6 +7,7 @@ public enum EventType {
     ORDER_FAILED("OrderFailed"),
     PRODUCT_LIKED("ProductLiked"),
     PRODUCT_UNLIKED("ProductUnliked"),
+    PRODUCT_VIEWED("ProductViewed"),
     MESSAGE_SEND_REQUESTED("MessageSendRequested");
 
     private final String value;

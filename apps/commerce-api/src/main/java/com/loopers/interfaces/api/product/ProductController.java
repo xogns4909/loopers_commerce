@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import com.loopers.domain.user.model.UserId;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,6 +33,8 @@ public class ProductController {
         ProductSortType sortBy,
         @RequestParam(required = false)
         Long brandId,
+        @RequestParam(required = false)
+        String userId,
         Pageable pageable
     ) {
         // 안전한 값으로 request 생성
@@ -42,15 +45,18 @@ public class ProductController {
             brandId
         );
         
-        Page<ProductInfo> pageResult = productFacade.getProducts(request, pageable);
+        UserId userIdObj = userId != null ? UserId.of(userId) : null;
+        Page<ProductInfo> pageResult = productFacade.getProducts(request, pageable, userIdObj);
         return ResponseEntity.ok(ApiResponse.success(ProductListResponse.from(pageResult)));
     }
 
     @GetMapping("/{productId}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProduct(
-        @PathVariable Long productId
+        @PathVariable Long productId,
+        @RequestParam(required = false) String userId  // 로깅용 사용자 ID
     ) {
-        ProductResponse product = productFacade.getProduct(productId);
+        UserId userIdObj = userId != null ? UserId.of(userId) : null;
+        ProductResponse product = productFacade.getProduct(productId, userIdObj);
         return ResponseEntity.ok(ApiResponse.success(product));
     }
 }

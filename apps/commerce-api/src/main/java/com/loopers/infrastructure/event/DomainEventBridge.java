@@ -7,6 +7,7 @@ import com.loopers.domain.order.event.OrderCreatedEvent;
 import com.loopers.domain.order.event.OrderFailedEvent;
 import com.loopers.domain.payment.event.PaymentCompletedEvent;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
+import com.loopers.domain.product.event.ProductViewedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -79,6 +80,17 @@ public class DomainEventBridge {
 
         log.debug("Publishing ProductUnliked event - messageId: {}, productId: {}",
             envelope.messageId(), event.productId());
+
+        publisher.publishEvent(envelope);
+    }
+
+    // Product View Events
+    public void publish(ProductViewedEvent event) {
+        Envelope<ProductViewedEvent> envelope =
+            envelopeFactory.create(EventType.PRODUCT_VIEWED, event);
+
+        log.debug("Publishing ProductViewed event - messageId: {}, productId: {}, viewType: {}",
+            envelope.messageId(), event.productId(), event.viewType());
 
         publisher.publishEvent(envelope);
     }
