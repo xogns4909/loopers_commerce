@@ -23,8 +23,7 @@ public class DomainEventBridge {
 
     // Payment Events
     public void publish(PaymentCompletedEvent event) {
-        Envelope<PaymentCompletedEvent> envelope =
-            envelopeFactory.create(EventType.PAYMENT_COMPLETED, event);
+        Envelope<PaymentCompletedEvent> envelope = envelopeFactory.create(EventType.PAYMENT_COMPLETED, event);
 
         log.debug("Publishing PaymentCompleted event - messageId: {}, paymentId: {}",
             envelope.messageId(), event.paymentId());
