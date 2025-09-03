@@ -2,6 +2,7 @@ package com.loopers.application.product;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.never;
@@ -10,6 +11,7 @@ import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.event.ProductViewedEvent;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import com.loopers.interfaces.api.product.ProductResponse;
 import com.loopers.interfaces.api.product.ProductSearchRequest;
 import org.junit.jupiter.api.DisplayName;
@@ -56,7 +58,7 @@ class ProductFacadeTest {
         assertThat(response).isNotNull();
         
         ArgumentCaptor<ProductViewedEvent> eventCaptor = ArgumentCaptor.forClass(ProductViewedEvent.class);
-        verify(eventBridge).publish(eventCaptor.capture());
+        verify(eventBridge).publishEvent(eq(EventType.PRODUCT_VIEWED),eventCaptor.capture());
         
         ProductViewedEvent capturedEvent = eventCaptor.getValue();
         assertThat(capturedEvent.productId()).isEqualTo(productId);
@@ -80,7 +82,7 @@ class ProductFacadeTest {
 
         // then
         assertThat(response).isNotNull();
-        verify(eventBridge, never()).publish(any(ProductViewedEvent.class));
+        verify(eventBridge, never()).publishEvent(any(), any());
     }
 
     @Test
@@ -107,7 +109,7 @@ class ProductFacadeTest {
         assertThat(result.getContent()).hasSize(2);
         
         ArgumentCaptor<ProductViewedEvent> eventCaptor = ArgumentCaptor.forClass(ProductViewedEvent.class);
-        verify(eventBridge, org.mockito.Mockito.times(2)).publish(eventCaptor.capture());
+        verify(eventBridge, org.mockito.Mockito.times(2)).publishEvent(eq(EventType.PRODUCT_VIEWED),eventCaptor.capture());
         
         List<ProductViewedEvent> capturedEvents = eventCaptor.getAllValues();
         
@@ -141,6 +143,6 @@ class ProductFacadeTest {
 
         // then
         assertThat(result).isNotNull();
-        verify(eventBridge, never()).publish(any(ProductViewedEvent.class));
+        verify(eventBridge, never()).publishEvent(any(), any());
     }
 }

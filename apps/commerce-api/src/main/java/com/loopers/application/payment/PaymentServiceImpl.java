@@ -10,6 +10,7 @@ import com.loopers.domain.payment.model.PaymentAmount;
 import com.loopers.domain.payment.model.PaymentStatus;
 import com.loopers.domain.payment.strategy.PaymentStrategyFactory;
 import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import com.loopers.interfaces.api.payment.PaymentCallbackRequest;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -57,11 +58,13 @@ public class PaymentServiceImpl implements PaymentService {
 
 
         if (saved.isCompleted()) {
-            eventBridge.publish(PaymentCompletedEvent.of(saved.getId(), saved.getOrderId(),
-                saved.getUserId(), saved.getTransactionKey()));
+            eventBridge.publishEvent(EventType.PAYMENT_COMPLETED, 
+                PaymentCompletedEvent.of(saved.getId(), saved.getOrderId(),
+                    saved.getUserId(), saved.getTransactionKey()));
         } else if (saved.isFailed()) {
-            eventBridge.publish(PaymentFailedEvent.of(saved.getId(), saved.getOrderId(),
-                saved.getUserId(), saved.getFailureReason(), saved.getTransactionKey()));
+            eventBridge.publishEvent(EventType.PAYMENT_FAILED, 
+                PaymentFailedEvent.of(saved.getId(), saved.getOrderId(),
+                    saved.getUserId(), saved.getFailureReason(), saved.getTransactionKey()));
         }
 
         return saved;
