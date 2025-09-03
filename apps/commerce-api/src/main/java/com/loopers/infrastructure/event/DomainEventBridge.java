@@ -1,8 +1,11 @@
 package com.loopers.infrastructure.event;
 
+import com.loopers.infrastructure.outbox.OutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -10,18 +13,15 @@ public class DomainEventBridge {
 
     private final ApplicationEventPublisher publisher;
     private final EnvelopeFactory envelopeFactory;
-    private final EventProcessorComposite eventProcessorComposite;
+    private final OutboxEventService outboxEventService;
 
+    @Transactional(propagation = Propagation.MANDATORY)
     public void publishEvent(EventType eventType, Object payload) {
         Envelope<Object> envelope = envelopeFactory.create(eventType, payload);
-        GeneralEnvelopeEvent generalEvent = GeneralEnvelopeEvent.from(envelope);
-        
-        publisher.publishEvent(generalEvent);
-        eventProcessorComposite.process(
-            envelope.type(), 
-            envelope.payload(), 
-            envelope.messageId(), 
-            envelope.correlationId()
-        );
+
+        publisher.publishEvent(envelope);
+
+        outboxEventService.save(envelope);
     }
+
 }

@@ -1,18 +1,19 @@
 package com.loopers.infrastructure.event;
 
 
-public record GeneralEnvelopeEvent(
+public record GeneralEnvelopeEvent<T>(
     String messageId,
     String type,
     String schemaVersion,
     String occurredAt,
     String source,
     String correlationId,
-    Object payload
+    T payload
 ) {
 
-    public static GeneralEnvelopeEvent from(Envelope<?> envelope) {
-        return new GeneralEnvelopeEvent(
+
+    public static <T> GeneralEnvelopeEvent<T> from(Envelope<T> envelope) {
+        return new GeneralEnvelopeEvent<>(
             envelope.messageId(),
             envelope.type(),
             "v1",
@@ -20,6 +21,15 @@ public record GeneralEnvelopeEvent(
             envelope.source(),
             envelope.correlationId(),
             envelope.payload()
+        );
+    }
+    
+
+
+    public GeneralEnvelopeEvent<Object> toUntyped() {
+        return new GeneralEnvelopeEvent<>(
+            messageId, type, schemaVersion, occurredAt, 
+            source, correlationId, (Object) payload
         );
     }
 }
