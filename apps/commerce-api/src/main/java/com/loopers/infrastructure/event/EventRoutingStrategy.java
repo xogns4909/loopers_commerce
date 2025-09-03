@@ -8,6 +8,8 @@ import com.loopers.domain.payment.event.PaymentCompletedEvent;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
 import com.loopers.domain.product.event.ProductViewedEvent;
 import com.loopers.application.notification.MessageSendRequested;
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -45,7 +47,7 @@ public class EventRoutingStrategy {
             case ProductUnlikedEvent e -> e.productId().toString();
             case ProductViewedEvent e -> e.productId().toString();
             case MessageSendRequested e -> e.recipientUserId();
-            default -> UUID.randomUUID().toString();
+            default -> throw new CoreException(ErrorType.INTERNAL_ERROR,"순서 보장을 위해 도메인 키가 필요합니다: " + payload.getClass().getSimpleName());
         };
     }
 }

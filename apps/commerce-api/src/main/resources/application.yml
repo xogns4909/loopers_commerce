@@ -22,6 +22,22 @@ spring:
       - jpa.yml
       - logging.yml
       - monitoring.yml
+  kafka:
+    producer:
+      bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      enable-idempotence: true
+      retries: 2147483647
+      properties:
+        max.in.flight.requests.per.connection: 5
+        compression.type: snappy
+        batch.size: 16384
+        linger.ms: 10
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        spring.json.add.type.headers: false
 
 springdoc:
   use-fqn: true
