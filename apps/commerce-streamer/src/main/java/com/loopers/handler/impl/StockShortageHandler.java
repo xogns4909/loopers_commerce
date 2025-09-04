@@ -6,6 +6,7 @@ import com.loopers.event.GeneralEnvelopeEvent;
 import com.loopers.handler.EventHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ import java.util.Set;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnBean(RedisTemplate.class)
 public class StockShortageHandler implements EventHandler {
     
     private final RedisTemplate<String, Object> redisTemplate;

@@ -39,7 +39,6 @@ public class OutboxEventRelay {
             try {
                 sendOnce(event);
             } catch (Exception ex) {
-                // 예외가 발생해도 루프 계속
                 log.error("Unexpected error while sending event: {}", event.getMessageId(), ex);
             }
         }

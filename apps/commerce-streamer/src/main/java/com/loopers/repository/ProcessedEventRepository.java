@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.Optional;
 
 @Repository
-public interface ProcessedEventRepository extends JpaRepository<ProcessedEvent, String> {
+public interface ProcessedEventRepository extends JpaRepository<ProcessedEvent, Long> {
 
     Optional<ProcessedEvent> findByMessageId(String messageId);
 

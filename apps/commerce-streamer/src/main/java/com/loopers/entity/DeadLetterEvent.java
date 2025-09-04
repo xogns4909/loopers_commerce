@@ -1,5 +1,6 @@
 package com.loopers.entity;
 
+import com.loopers.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,13 +12,9 @@ import java.time.ZonedDateTime;
 @Table(name = "dead_letter_events")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class DeadLetterEvent {
+public class DeadLetterEvent extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "message_id", nullable = false, length = 128)
+    @Column(name = "message_id", nullable = false, length = 128, unique = true)
     private String messageId;
 
     @Column(name = "original_topic", nullable = false, length = 100)

@@ -21,20 +21,20 @@ public class OutboxEventService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void save(Envelope<?> envelope) {
         EventType eventType = EventType.fromString(envelope.type());
-        
+
         String topic = eventRoutingStrategy.getTopic(eventType);
         String key = eventRoutingStrategy.getKey(envelope.payload());
-        
+
         GeneralEnvelopeEvent<?> generalEvent = GeneralEnvelopeEvent.from(envelope);
-        
+
         OutboxEvent outboxEvent = OutboxEvent.create(topic, key, generalEvent);
         outboxEventRepository.save(outboxEvent);
     }
-    
+
     public boolean isAlreadyExists(String messageId) {
         return outboxEventRepository.existsByMessageId(messageId);
     }
-    
+
     public long countByStatus(OutboxEvent.OutboxStatus status) {
         return outboxEventRepository.countByStatus(status);
     }

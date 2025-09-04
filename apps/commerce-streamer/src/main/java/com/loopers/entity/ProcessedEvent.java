@@ -1,5 +1,6 @@
 package com.loopers.entity;
 
+import com.loopers.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,10 +12,9 @@ import java.time.ZonedDateTime;
 @Table(name = "processed_events")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProcessedEvent {
+public class ProcessedEvent extends BaseEntity {
 
-    @Id
-    @Column(name = "message_id", length = 128)
+    @Column(name = "message_id", length = 128, unique = true, nullable = false)
     private String messageId;
 
     @Enumerated(EnumType.STRING)

@@ -40,7 +40,7 @@ open class KafkaConfig {
     }
 
     @Bean
-    open  fun consumerFactory(
+    open fun consumerFactory(
         kafkaProperties: KafkaProperties,
     ): ConsumerFactory<Any, Any> {
         val props: Map<String, Any> = HashMap(kafkaProperties.buildConsumerProperties())
@@ -48,18 +48,17 @@ open class KafkaConfig {
     }
 
     @Bean
-    open  fun kafkaTemplate(producerFactory: ProducerFactory<Any, Any>): KafkaTemplate<String, Object> {
-        @Suppress("UNCHECKED_CAST")
-        return KafkaTemplate(producerFactory as ProducerFactory<String, Object>)
+    open fun kafkaTemplate(producerFactory: ProducerFactory<Any, Any>): KafkaTemplate<Any, Any> {
+        return KafkaTemplate(producerFactory)
     }
 
     @Bean
-    open  fun jsonMessageConverter(objectMapper: ObjectMapper): ByteArrayJsonMessageConverter {
+    open fun jsonMessageConverter(objectMapper: ObjectMapper): ByteArrayJsonMessageConverter {
         return ByteArrayJsonMessageConverter(objectMapper)
     }
 
     @Bean(BATCH_LISTENER)
-    open  fun defaultBatchListenerContainerFactory(
+    open fun defaultBatchListenerContainerFactory(
         kafkaProperties: KafkaProperties,
         converter: ByteArrayJsonMessageConverter,
     ): ConcurrentKafkaListenerContainerFactory<*, *> {

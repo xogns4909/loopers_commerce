@@ -1,24 +1,20 @@
 package com.loopers.entity;
 
+import com.loopers.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
 
-/**
- * 감사 로그 엔티티
- * 봉투 패턴(GeneralEnvelopeEvent) 그대로 저장
- */
+
 @Entity
 @Table(name = "audit_logs")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AuditLog {
+public class AuditLog extends BaseEntity {
     
-    @Id
-    @Column(name = "message_id", length = 36)
+    @Column(name = "message_id", length = 36, unique = true)
     private String messageId;
     
     @Column(name = "type", nullable = false, length = 100)
@@ -39,23 +35,6 @@ public class AuditLog {
     @Lob
     @Column(name = "payload", columnDefinition = "TEXT")
     private String payload;  // JSON 문자열로 저장
-    
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     @Builder
     public AuditLog(String messageId, String type, String schemaVersion, 

@@ -1,13 +1,12 @@
 package com.loopers.entity;
 
+import com.loopers.domain.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
 
 @Entity
 @Table(name = "event_metrics", 
@@ -20,11 +19,7 @@ import java.time.LocalDateTime;
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EventMetric {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class EventMetric extends BaseEntity {
     
     @Column(name = "event_type", nullable = false, length = 100)
     private String eventType;
@@ -43,23 +38,6 @@ public class EventMetric {
     
     @Column(name = "tags", length = 1000)
     private String tags;
-    
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     @Builder
     public EventMetric(String eventType, String metricName, BigDecimal metricValue, 
