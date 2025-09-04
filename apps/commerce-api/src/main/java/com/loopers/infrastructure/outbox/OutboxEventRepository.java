@@ -10,9 +10,7 @@ import java.util.List;
 @Repository
 public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> {
 
-
     List<OutboxEvent> findTop100ByStatusOrderByCreatedAt(OutboxEvent.OutboxStatus status);
-
 
     @Query("""
         SELECT e
@@ -22,7 +20,6 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
          ORDER BY e.createdAt ASC
     """)
     List<OutboxEvent> findTop100ReadyToSend(@Param("now") ZonedDateTime now);
-
 
     @Modifying
     @Query("""
@@ -35,7 +32,6 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
     int claimEventsForSending(@Param("ids") List<Long> ids,
         @Param("now") ZonedDateTime now);
 
-
     @Modifying
     @Query("""
         DELETE FROM OutboxEvent e
@@ -43,4 +39,9 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
            AND e.createdAt < :cutoff
     """)
     int softDeleteOldPublishedEvents(@Param("cutoff") ZonedDateTime cutoff);
+
+    // 누락된 메소드들 추가
+    boolean existsByMessageId(String messageId);
+    
+    long countByStatus(OutboxEvent.OutboxStatus status);
 }

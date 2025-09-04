@@ -1,7 +1,8 @@
 package com.loopers.consumer;
 
 import com.loopers.event.GeneralEnvelopeEvent;
-import com.loopers.processor.EventProcessor;
+import com.loopers.retry.RetryPolicy;
+import com.loopers.retry.RetryableEventProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -15,8 +16,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class EventConsumer {
 
-    private final EventProcessor eventProcessor;
-    private static final int MAX_RETRY_ATTEMPTS = 3;
+    private final RetryableEventProcessor retryableEventProcessor;
 
     @KafkaListener(topics = "order-events.v1", groupId = "order-consumer")
     public void handleOrderEvents(GeneralEnvelopeEvent envelope, 
@@ -29,12 +29,19 @@ public class EventConsumer {
                 envelope.messageId(), envelope.type(), partition, offset);
         
         try {
-            eventProcessor.process(envelope);
+            // 주문 이벤트는 중요하므로 적극적인 재시도 정책 적용
+            retryableEventProcessor.processWithRetry(
+                envelope, topic, partition, offset, "order-consumer", RetryPolicy.AGGRESSIVE);
+            
             ack.acknowledge();
+            log.debug("Order event acknowledged - messageId: {}", envelope.messageId());
+            
         } catch (Exception e) {
-            log.error("Failed to process order event - messageId: {}, will retry or send to DLT", 
-                    envelope.messageId(), e);
-            handleFailedMessage(envelope, e, ack);
+            log.error("Critical: Failed to process order event after all retries - messageId: {}. " +
+                     "Event has been sent to Dead Letter Table.", envelope.messageId(), e);
+            
+            // 재시도 로직에서 이미 DLT로 보냈으므로 ACK 처리
+            ack.acknowledge();
         }
     }
 
@@ -49,12 +56,19 @@ public class EventConsumer {
                 envelope.messageId(), envelope.type(), partition, offset);
         
         try {
-            eventProcessor.process(envelope);
+            // 카탈로그 이벤트는 표준 재시도 정책 적용
+            retryableEventProcessor.processWithRetry(
+                envelope, topic, partition, offset, "catalog-consumer", RetryPolicy.STANDARD);
+            
             ack.acknowledge();
+            log.debug("Catalog event acknowledged - messageId: {}", envelope.messageId());
+            
         } catch (Exception e) {
-            log.error("Failed to process catalog event - messageId: {}, will retry or send to DLT", 
-                    envelope.messageId(), e);
-            handleFailedMessage(envelope, e, ack);
+            log.error("Critical: Failed to process catalog event after all retries - messageId: {}. " +
+                     "Event has been sent to Dead Letter Table.", envelope.messageId(), e);
+            
+            // 재시도 로직에서 이미 DLT로 보냈으므로 ACK 처리
+            ack.acknowledge();
         }
     }
 
@@ -69,24 +83,19 @@ public class EventConsumer {
                 envelope.messageId(), envelope.type(), partition, offset);
         
         try {
-            eventProcessor.process(envelope);
+            // 알림 이벤트는 빠른 재시도 정책 적용 (덜 중요하므로)
+            retryableEventProcessor.processWithRetry(
+                envelope, topic, partition, offset, "notification-consumer", RetryPolicy.FAST);
+            
             ack.acknowledge();
+            log.debug("Notification event acknowledged - messageId: {}", envelope.messageId());
+            
         } catch (Exception e) {
-            log.error("Failed to process notification event - messageId: {}, will retry or send to DLT", 
-                    envelope.messageId(), e);
-            handleFailedMessage(envelope, e, ack);
+            log.error("Critical: Failed to process notification event after all retries - messageId: {}. " +
+                     "Event has been sent to Dead Letter Table.", envelope.messageId(), e);
+            
+            // 재시도 로직에서 이미 DLT로 보냈으므로 ACK 처리
+            ack.acknowledge();
         }
-    }
-    
-    private void handleFailedMessage(GeneralEnvelopeEvent envelope, Exception e, Acknowledgment ack) {
-        // TODO: 실제로는 DLT(Dead Letter Topic)로 전송하거나 재시도 로직 구현
-        // 현재는 로그만 남기고 ACK 처리 (무한 루프 방지)
-        log.error("Event processing failed after retries, sending to DLT - messageId: {}, type: {}", 
-                envelope.messageId(), envelope.type());
-        
-        // 실패한 이벤트도 audit_logs에는 기록되도록 
-        // (AuditLogHandler는 모든 이벤트를 try-catch로 안전하게 처리)
-        
-        ack.acknowledge();  // 임시로 ACK 처리 (추후 DLT 구현)
     }
 }

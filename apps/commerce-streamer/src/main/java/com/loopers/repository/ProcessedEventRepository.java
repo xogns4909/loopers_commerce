@@ -39,6 +39,12 @@ public interface ProcessedEventRepository extends JpaRepository<ProcessedEvent, 
     """)
     int cleanupStaleProcessing(@Param("cutoff") ZonedDateTime cutoff);
 
+    @Modifying
+    @Query("""
+        DELETE FROM ProcessedEvent e
+         WHERE e.status = :status AND e.processedAt < :cutoff
+    """)
+    int deleteByStatusAndProcessedAtBefore(@Param("status") ProcessedEvent.Status status, @Param("cutoff") ZonedDateTime cutoff);
 
     default boolean tryInsertProcessing(String messageId, String eventType, String correlationId) {
         try {

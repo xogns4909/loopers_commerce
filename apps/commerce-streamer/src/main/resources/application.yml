@@ -20,7 +20,7 @@ spring:
   config:
     import:
       - jpa.yml
-      - redis.yml
+      # - redis.yml  # Redis 없이 테스트하려면 주석 처리
       - logging.yml
       - monitoring.yml
   kafka:
@@ -42,6 +42,20 @@ spring:
 demo-kafka:
   test:
     topic-name: demo.internal.topic-v1
+
+# DLT 관련 설정
+app:
+  cleanup:
+    processed-events:
+      retention-days: 30  # 처리 완료 이벤트 보관 기간
+    dead-letter-events:
+      retention-days: 90  # 해결된 DLT 이벤트 보관 기간
+    stale-processing:
+      timeout-hours: 2    # 처리 중 상태 타임아웃
+  retry:
+    default-policy: STANDARD  # FAST, STANDARD, AGGRESSIVE
+  metrics:
+    enabled: true
 
 ---
 spring:
