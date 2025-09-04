@@ -18,7 +18,6 @@ public class AuditLogHandler implements EventHandler {
 
     @Override
     public boolean canHandle(String eventType) {
-        // 모든 이벤트를 처리 (감사 로그는 모든 이벤트를 기록)
         return true;
     }
 

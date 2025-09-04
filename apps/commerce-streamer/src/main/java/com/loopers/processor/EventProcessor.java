@@ -14,44 +14,48 @@ import java.util.concurrent.CompletableFuture;
 @Component
 @RequiredArgsConstructor
 public class EventProcessor {
-    
+
     private final List<EventHandler> eventHandlers;
     private final ProcessedEventService processedEventService;
-    
+
     public void process(GeneralEnvelopeEvent envelope) {
-        String messageId = envelope.messageId();
-        String eventType = envelope.type();
-        
-        // 멱등성 체크: 이미 처리된 이벤트인지 확인
-        if (!processedEventService.markAsProcessed(messageId, eventType, envelope.correlationId())) {
-            log.info("Duplicate event detected, skipping - messageId: {}", messageId);
+        String messageId   = envelope.messageId();
+        String eventType   = envelope.type();
+        String correlation = envelope.correlationId();
+
+
+        boolean acquired = processedEventService.tryStart(messageId, eventType, correlation);
+        if (!acquired) {
+            log.info("Duplicate or already processing/processed, skip - messageId: {}", messageId);
             return;
         }
-        
-        log.info("Processing event - type: {}, messageId: {}, payload: {}", 
-                eventType, messageId, envelope.payload());
-        
-        // 비동기로 여러 핸들러 동시 실행 (성능 개선)
+
+        log.info("Processing event - type: {}, messageId: {}, payload: {}",
+            eventType, messageId, envelope.payload());
+
+
         List<CompletableFuture<Void>> futures = eventHandlers.stream()
-            .filter(handler -> handler.canHandle(eventType))
-            .map(handler -> CompletableFuture.runAsync(() -> {
-                try {
-                    handler.handle(envelope);
-                    log.debug("Handler {} processed event {}", 
-                        handler.getClass().getSimpleName(), messageId);
-                } catch (Exception e) {
-                    // 핸들러 실패는 격리 (다른 핸들러에 영향 없음)
-                    log.error("Handler {} failed for event {} - {}", 
-                        handler.getClass().getSimpleName(), messageId, e.getMessage());
-                }
-            }))
+            .filter(h -> h.canHandle(eventType))
+            .map(h -> CompletableFuture.runAsync(() -> h.handle(envelope)))
             .toList();
-        
-        // 모든 핸들러 완료 대기
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        
-        if (futures.isEmpty()) {
-            log.warn("No handler found for event type: {}", eventType);
+
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            if (futures.isEmpty()) {
+                log.warn("No handler found for event type: {}", eventType);
+            }
+
+
+            processedEventService.markProcessed(messageId);
+            log.debug("Event processed successfully - messageId: {}", messageId);
+
+        } catch (Exception ex) {
+
+            processedEventService.markFailed(messageId);
+            log.error("Event processing failed - messageId: {}, err={}", messageId, ex.getMessage(), ex);
+            // 예외는 컨슈머 레이어에서 DLQ 정책이 처리 (여기선 삼켜도 되고 던져도 됨)
+            throw ex;
         }
     }
 }

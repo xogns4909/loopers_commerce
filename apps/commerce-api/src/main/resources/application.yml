@@ -20,8 +20,14 @@ spring:
   config:
     import:
       - jpa.yml
+      - kafka.yml
       - logging.yml
       - monitoring.yml
+  task:
+    scheduling:
+      enable: true
+      pool:
+        size: 2
   kafka:
     producer:
       bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}

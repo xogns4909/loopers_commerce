@@ -48,8 +48,9 @@ open class KafkaConfig {
     }
 
     @Bean
-    open  fun kafkaTemplate(producerFactory: ProducerFactory<Any, Any>): KafkaTemplate<Any, Any> {
-        return KafkaTemplate(producerFactory)
+    open  fun kafkaTemplate(producerFactory: ProducerFactory<Any, Any>): KafkaTemplate<String, Object> {
+        @Suppress("UNCHECKED_CAST")
+        return KafkaTemplate(producerFactory as ProducerFactory<String, Object>)
     }
 
     @Bean

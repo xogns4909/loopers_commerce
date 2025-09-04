@@ -1,41 +1,40 @@
 package com.loopers.service;
 
-import com.loopers.entity.ProcessedEvent;
+
 import com.loopers.repository.ProcessedEventRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
+import java.time.ZonedDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class ProcessedEventService {
-    
-    private final ProcessedEventRepository processedEventRepository;
-    
+
+    private final ProcessedEventRepository repository;
+
 
     @Transactional
-    public boolean markAsProcessed(String messageId, String eventType, String correlationId) {
-        try {
-            if (processedEventRepository.existsById(messageId)) {
-                log.warn("Event already processed - messageId: {}, type: {}", messageId, eventType);
-                return false;
-            }
+    public boolean tryStart(String messageId, String eventType, String correlationId) {
+        return repository.tryInsertProcessing(messageId, eventType, correlationId);
+    }
 
-            ProcessedEvent processedEvent = ProcessedEvent.builder()
-                .messageId(messageId)
-                .eventType(eventType)
-                .correlationId(correlationId)
-                .build();
-                
-            processedEventRepository.save(processedEvent);
-            return true;
-            
-        } catch (DataIntegrityViolationException e) {
-            log.warn("Duplicate event processing attempted - messageId: {}", messageId);
-            return false;
+
+    @Transactional
+    public void markProcessed(String messageId) {
+        int updated = repository.markProcessed(messageId, ZonedDateTime.now());
+        if (updated == 0) {
+            // 이미 PROCESSED 또는 선점 실패 상태일 수 있음 – 필요시 로그
+        }
+    }
+
+
+    @Transactional
+    public void markFailed(String messageId) {
+        int updated = repository.markFailed(messageId, ZonedDateTime.now());
+        if (updated == 0) {
+            // 이미 PROCESSED 등 – 필요시 로그
         }
     }
 }

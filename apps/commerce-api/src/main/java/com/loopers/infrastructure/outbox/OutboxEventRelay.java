@@ -19,50 +19,54 @@ import java.util.concurrent.ExecutionException;
 public class OutboxEventRelay {
 
     private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, GeneralEnvelopeEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @Scheduled(fixedDelay = 1000)
+    private final RetryPolicy retryPolicy = new DefaultRetryPolicy();
+
+    @Scheduled(fixedDelay = 10000)
     @Transactional
     public void relayEvents() {
-        List<OutboxEvent> newEvents = outboxEventRepository
-            .findTop100ByStatusOrderByCreatedAt(OutboxEvent.OutboxStatus.NEW);
+        List<OutboxEvent> ready = outboxEventRepository.findTop100ReadyToSend(ZonedDateTime.now());
+        if (ready.isEmpty()) return;
 
-        if (newEvents.isEmpty()) {
-            return;
-        }
+        int claimed = outboxEventRepository.claimEventsForSending(
+            ready.stream().map(OutboxEvent::getId).toList(),
+            ZonedDateTime.now() 
+        );
+        if (claimed == 0) return;
 
-        for (OutboxEvent event : newEvents) {
-            if (claimAndSendSingle(event)) {
-                log.debug("Event sent successfully: {}", event.getMessageId());
+        for (OutboxEvent event : ready) {
+            try {
+                sendOnce(event);
+            } catch (Exception ex) {
+                // 예외가 발생해도 루프 계속
+                log.error("Unexpected error while sending event: {}", event.getMessageId(), ex);
             }
         }
     }
 
     @Transactional
-    protected boolean claimAndSendSingle(OutboxEvent event) {
-        int claimedCount = outboxEventRepository.claimEventsForSending(List.of(event.getId()));
-        if (claimedCount == 0) {
-            return false;
-        }
-
+    protected void sendOnce(OutboxEvent event) {
         event.markAsSending();
 
         try {
-
-            SendResult<String, GeneralEnvelopeEvent> result = kafkaTemplate
+            SendResult<String, Object> result = kafkaTemplate
                 .send(event.getTopic(), event.getEventKey(), event.toGeneralEnvelopeEvent())
                 .get();
 
             event.markAsPublished();
             outboxEventRepository.save(event);
-            return true;
 
-        } catch (InterruptedException | ExecutionException e) {
-
-            log.error("Failed to send event: {}", event.getMessageId(), e);
-            event.markAsFailed();
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt(); // 인터럽트 복구
+            log.error("Interrupted while sending event: {}", event.getMessageId(), ie);
+            event.markAsFailed(ie.getMessage(), retryPolicy);
             outboxEventRepository.save(event);
-            return false;
+
+        } catch (ExecutionException ee) {
+            log.error("Failed to send event: {}", event.getMessageId(), ee);
+            event.markAsFailed(ee.getMessage(), retryPolicy);
+            outboxEventRepository.save(event);
         }
     }
 
@@ -71,7 +75,6 @@ public class OutboxEventRelay {
     public void cleanupOldEvents() {
         ZonedDateTime cutoffDate = ZonedDateTime.now().minusDays(7);
         int deletedCount = outboxEventRepository.softDeleteOldPublishedEvents(cutoffDate);
-
         if (deletedCount > 0) {
             log.info("Cleaned up {} old published events", deletedCount);
         }

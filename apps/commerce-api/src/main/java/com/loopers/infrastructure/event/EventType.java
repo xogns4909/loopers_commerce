@@ -14,7 +14,8 @@ public enum EventType {
     PRODUCT_LIKED("ProductLiked"),
     PRODUCT_UNLIKED("ProductUnliked"),
     PRODUCT_VIEWED("ProductViewed"),
-    MESSAGE_SEND_REQUESTED("MessageSendRequested");
+    MESSAGE_SEND_REQUESTED("MessageSendRequested"),
+    STOCK_SHORTAGE("StockShortage");  // 재고 부족 이벤트 추가
 
     private final String value;
 

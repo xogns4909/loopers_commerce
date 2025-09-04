@@ -1,5 +1,7 @@
 package com.loopers.infrastructure.event;
 
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import org.springframework.stereotype.Component;
 import java.util.List;
 
@@ -27,6 +29,6 @@ public class EventProcessorComposite {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Unknown event type: " + eventTypeStr);
+        throw new CoreException(ErrorType.INTERNAL_ERROR,"Unknown event type: " + eventTypeStr);
     }
 }
