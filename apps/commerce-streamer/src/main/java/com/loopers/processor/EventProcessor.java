@@ -8,82 +8,50 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-/**
- * 이벤트 처리 프로세서
- * 
- * 설계 근거:
- * - 멱등성 보장: ProcessedEventService로 중복 처리 방지
- * - 핸들러 패턴: 이벤트 타입별 처리 로직 분리
- * - 확장성: 새로운 이벤트 타입 추가 시 핸들러만 추가
- * - 실패 시 재처리: 예외 발생 시 ACK 하지 않아 재처리 가능
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class EventProcessor {
-
-    private final List<EventHandler> handlers;
+    
+    private final List<EventHandler> eventHandlers;
     private final ProcessedEventService processedEventService;
-
-    /**
-     * 이벤트 처리
-     * 멱등성을 보장하면서 적절한 핸들러로 라우팅
-     */
+    
     public void process(GeneralEnvelopeEvent envelope) {
         String messageId = envelope.messageId();
         String eventType = envelope.type();
-        String correlationId = envelope.correlationId();
         
-        log.debug("Processing event - messageId: {}, type: {}, correlationId: {}", 
-                 messageId, eventType, correlationId);
-        
-        // 멱등성 체크 및 처리
-        boolean processed = processedEventService.processIfNotExists(
-            messageId, eventType, correlationId,
-            () -> handleEvent(envelope)
-        );
-        
-        if (!processed) {
-            log.info("Event already processed, skipping - messageId: {}, type: {}", 
-                    messageId, eventType);
-            // 이미 처리된 이벤트는 정상 처리로 간주하여 ACK
+        // 멱등성 체크: 이미 처리된 이벤트인지 확인
+        if (!processedEventService.markAsProcessed(messageId, eventType, envelope.correlationId())) {
+            log.info("Duplicate event detected, skipping - messageId: {}", messageId);
             return;
         }
         
-        log.info("Event processing completed - messageId: {}, type: {}", 
-                messageId, eventType);
-    }
-
-    /**
-     * 실제 이벤트 처리
-     * 적절한 핸들러 찾아서 처리
-     */
-    private void handleEvent(GeneralEnvelopeEvent envelope) {
-        String eventType = envelope.type();
-        boolean handled = false;
+        log.info("Processing event - type: {}, messageId: {}, payload: {}", 
+                eventType, messageId, envelope.payload());
         
-        // 여러 핸들러가 동일 이벤트를 처리할 수 있음
-        for (EventHandler handler : handlers) {
-            if (handler.canHandle(eventType)) {
+        // 비동기로 여러 핸들러 동시 실행 (성능 개선)
+        List<CompletableFuture<Void>> futures = eventHandlers.stream()
+            .filter(handler -> handler.canHandle(eventType))
+            .map(handler -> CompletableFuture.runAsync(() -> {
                 try {
                     handler.handle(envelope);
-                    handled = true;
-                    log.debug("Event handled by {} - type: {}", 
-                             handler.getClass().getSimpleName(), eventType);
+                    log.debug("Handler {} processed event {}", 
+                        handler.getClass().getSimpleName(), messageId);
                 } catch (Exception e) {
-                    log.error("Handler {} failed to process event type: {}", 
-                             handler.getClass().getSimpleName(), eventType, e);
-                    // 하나의 핸들러라도 실패하면 전체 실패로 처리
-                    throw new RuntimeException("Event handling failed", e);
+                    // 핸들러 실패는 격리 (다른 핸들러에 영향 없음)
+                    log.error("Handler {} failed for event {} - {}", 
+                        handler.getClass().getSimpleName(), messageId, e.getMessage());
                 }
-            }
-        }
+            }))
+            .toList();
         
-        if (!handled) {
+        // 모든 핸들러 완료 대기
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        
+        if (futures.isEmpty()) {
             log.warn("No handler found for event type: {}", eventType);
-            // 핸들러가 없는 이벤트는 무시하고 ACK
-            // 향후 새로운 이벤트 타입이 추가되어도 기존 컨슈머가 멈추지 않음
         }
     }
 }

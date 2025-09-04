@@ -3,7 +3,9 @@ package com.loopers;
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.kafka.annotation.EnableKafka;
 
 import java.util.TimeZone;
@@ -11,6 +13,8 @@ import java.util.TimeZone;
 @EnableKafka
 @ConfigurationPropertiesScan
 @SpringBootApplication
+@EnableJpaRepositories(basePackages = "com.loopers.repository")
+@EntityScan(basePackages = "com.loopers.entity")
 public class CommerceStreamerApplication {
 
     @PostConstruct
