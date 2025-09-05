@@ -20,8 +20,8 @@ spring:
   config:
     import:
       - jpa.yml
-      # - redis.yml  # Redis 없이 테스트하려면 주석 처리
       - logging.yml
+      - redis.yml  # Redis 없이 테스트하려면 주석 처리
       - monitoring.yml
   kafka:
     bootstrap-servers: localhost:9092
@@ -33,9 +33,16 @@ spring:
       auto-offset-reset: latest
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: "*"
-        spring.json.value.default.type: com.loopers.event.GeneralEnvelopeEvent
-        spring.json.use.type.headers: false
+        spring:
+          json:
+            trusted:
+              packages: "*"
+            value:
+              default:
+                type: com.loopers.event.GeneralEnvelopeEvent
+            use:
+              type:
+                headers: false
     listener:
       ack-mode: manual
 

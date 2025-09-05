@@ -2,6 +2,7 @@ package com.loopers.handler.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.loopers.event.EventTypes;
 import com.loopers.event.GeneralEnvelopeEvent;
 import com.loopers.handler.EventHandler;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,6 @@ import java.util.*;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnBean(RedisTemplate.class)
 public class CacheEvictionHandler implements EventHandler {
 
     // String 타입으로 통일 (대부분의 캐시 키는 String)
@@ -24,150 +24,94 @@ public class CacheEvictionHandler implements EventHandler {
 
     @Override
     public boolean canHandle(String eventType) {
-        // 캐시 무효화가 필요한 이벤트들
-        return Arrays.asList(
-            "STOCK_SHORTAGE", 
-            "PRODUCT_UPDATED", 
-            "PRICE_CHANGED",
-            "INVENTORY_UPDATED"
-        ).contains(eventType.toUpperCase());
+        boolean canHandle = EventTypes.CACHE_EVICTION_EVENTS.contains(eventType);
+        log.debug("CacheEvictionHandler.canHandle({}) = {}", eventType, canHandle);
+        return canHandle;
     }
 
     @Override
     public void handle(GeneralEnvelopeEvent envelope) {
-        try {
-            String eventType = envelope.type().toUpperCase();
-            JsonNode payload = objectMapper.valueToTree(envelope.payload());
-            
-            switch (eventType) {
-                case "STOCK_SHORTAGE" -> handleStockShortage(payload, envelope.messageId());
-                case "PRODUCT_UPDATED" -> handleProductUpdate(payload, envelope.messageId());
-                case "PRICE_CHANGED" -> handlePriceChange(payload, envelope.messageId());
-                case "INVENTORY_UPDATED" -> handleInventoryUpdate(payload, envelope.messageId());
-                default -> log.warn("Unknown event type for cache eviction: {}", eventType);
-            }
-            
-        } catch (Exception e) {
-            log.error("Failed to process cache eviction - messageId: {}, eventType: {}", 
-                     envelope.messageId(), envelope.type(), e);
+        String eventType = envelope.type();
+        JsonNode payload = objectMapper.valueToTree(envelope.payload());
+        
+        log.info("CacheEvictionHandler processing event - type: {}, messageId: {}", 
+                eventType, envelope.messageId());
+        
+        switch (eventType) {
+            case EventTypes.STOCK_SHORTAGE -> handleStockShortage(payload, envelope.messageId());
+            case EventTypes.PRODUCT_UPDATED -> handleProductUpdate(payload, envelope.messageId());
+            case EventTypes.PRICE_CHANGED -> handlePriceChange(payload, envelope.messageId());
+            case EventTypes.INVENTORY_UPDATED -> handleInventoryUpdate(payload, envelope.messageId());
+            default -> log.warn("Unknown event type for cache eviction: {}", eventType);
         }
     }
 
     private void handleStockShortage(JsonNode payload, String messageId) {
         long productId = payload.path("productId").asLong();
-        int currentStock = payload.path("currentStock").asInt();
-        int requestedQty = payload.path("requestedQuantity").asInt();
         
-
-        List<String> keysToDelete = Arrays.asList(
-            "product:stock:" + productId,           // 재고 캐시
-            "product:availability:" + productId,    // 구매 가능 여부
-            "catalog:featured:products",            // 추천 상품 목록  
-            "product:details:" + productId          // 상품 상세 정보
+        List<String> keyPatterns = Arrays.asList(
+            "shop:cache:product:*:id=" + productId + "&type=detail",
+            "shop:cache:product:*:*&type=list",
+            "shop:cache:ns:product"
         );
         
-        deleteSpecificKeys(keysToDelete, messageId);
-        
-        log.warn("Stock shortage cache eviction - productId: {}, current: {}, requested: {}", 
-                productId, currentStock, requestedQty);
+        deleteKeysWithPattern(keyPatterns, messageId);
+        log.warn("Stock shortage cache eviction - productId: {}", productId);
     }
 
     private void handleProductUpdate(JsonNode payload, String messageId) {
         long productId = payload.path("productId").asLong();
         
-        List<String> keysToDelete = Arrays.asList(
-            "product:details:" + productId,
-            "product:summary:" + productId,
-            "catalog:category:" + payload.path("categoryId").asText(),
-            "search:products:*"
+        List<String> keyPatterns = Arrays.asList(
+            "shop:cache:product:*:id=" + productId + "&type=detail",
+            "shop:cache:product:*:*&type=list",
+            "shop:cache:ns:product"
         );
         
-        deleteKeysWithPattern(keysToDelete, messageId);
+        deleteKeysWithPattern(keyPatterns, messageId);
         log.info("Product update cache eviction - productId: {}", productId);
     }
 
     private void handlePriceChange(JsonNode payload, String messageId) {
         long productId = payload.path("productId").asLong();
         
-        List<String> keysToDelete = Arrays.asList(
-            "product:price:" + productId,
-            "product:details:" + productId,
-            "pricing:category:" + payload.path("categoryId").asText()
+        List<String> keyPatterns = Arrays.asList(
+            "shop:cache:product:*:id=" + productId + "&type=detail",
+            "shop:cache:product:*:*&type=list",
+            "shop:cache:ns:product"
         );
         
-        deleteSpecificKeys(keysToDelete, messageId);
+        deleteKeysWithPattern(keyPatterns, messageId);
         log.info("Price change cache eviction - productId: {}", productId);
     }
 
     private void handleInventoryUpdate(JsonNode payload, String messageId) {
         long productId = payload.path("productId").asLong();
         
-        List<String> keysToDelete = Arrays.asList(
-            "product:stock:" + productId,
-            "product:availability:" + productId,
-            "inventory:warehouse:" + payload.path("warehouseId").asText()
+        List<String> keyPatterns = Arrays.asList(
+            "shop:cache:product:*:id=" + productId + "&type=detail",
+            "shop:cache:ns:product"
         );
         
-        deleteSpecificKeys(keysToDelete, messageId);
+        deleteKeysWithPattern(keyPatterns, messageId);
         log.info("Inventory update cache eviction - productId: {}", productId);
     }
 
-
-    private void deleteSpecificKeys(List<String> keys, String messageId) {
-        try {
-            Set<String> existingKeys = new HashSet<>();
-            
-            for (String key : keys) {
-                if (Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-                    existingKeys.add(key);
-                }
+    private void deleteKeysWithPattern(List<String> keyPatterns, String messageId) {
+        Set<String> keysToDelete = new HashSet<>();
+        
+        for (String pattern : keyPatterns) {
+            Set<String> matchedKeys = redisTemplate.keys(pattern);
+            if (matchedKeys != null && !matchedKeys.isEmpty() && matchedKeys.size() <= 200) {
+                keysToDelete.addAll(matchedKeys);
             }
-            
-            if (!existingKeys.isEmpty()) {
-                Long deletedCount = redisTemplate.delete(existingKeys);
-                log.info("Deleted {} specific cache keys - messageId: {}, keys: {}", 
-                        deletedCount, messageId, existingKeys);
-            } else {
-                log.debug("No matching cache keys found - messageId: {}", messageId);
-            }
-            
-        } catch (Exception e) {
-            log.error("Failed to delete specific cache keys - messageId: {}", messageId, e);
         }
-    }
-
-    /**
-     * 패턴이 포함된 키들 처리 (신중하게 사용)
-     */
-    private void deleteKeysWithPattern(List<String> keysOrPatterns, String messageId) {
-        try {
-            Set<String> keysToDelete = new HashSet<>();
-            
-            for (String keyOrPattern : keysOrPatterns) {
-                if (keyOrPattern.contains("*")) {
-                    // 패턴 매칭은 제한적으로만 사용
-                    Set<String> matchedKeys = redisTemplate.keys(keyOrPattern);
-                    if (matchedKeys != null && matchedKeys.size() <= 100) { // 안전장치
-                        keysToDelete.addAll(matchedKeys);
-                    } else {
-                        log.warn("Too many keys matched pattern '{}' or null result - skipping deletion", keyOrPattern);
-                    }
-                } else {
-                    // 정확한 키
-                    if (Boolean.TRUE.equals(redisTemplate.hasKey(keyOrPattern))) {
-                        keysToDelete.add(keyOrPattern);
-                    }
-                }
-            }
-            
-            if (!keysToDelete.isEmpty()) {
-                Long deletedCount = redisTemplate.delete(keysToDelete);
-                log.info("Deleted {} cache keys (with patterns) - messageId: {}, count: {}", 
-                        deletedCount, messageId, keysToDelete.size());
-            }
-            
-        } catch (Exception e) {
-            log.error("Failed to delete cache keys with patterns - messageId: {}", messageId, e);
+        
+        if (!keysToDelete.isEmpty()) {
+            Long deletedCount = redisTemplate.delete(keysToDelete);
+            log.info("Cache eviction completed - messageId: {}, deleted: {} keys", messageId, deletedCount);
+        } else {
+            log.info("No cache keys found to delete - messageId: {}", messageId);
         }
     }
 }

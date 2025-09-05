@@ -34,7 +34,7 @@ open class KafkaConfig {
     @Bean
     open fun producerFactory(
         kafkaProperties: KafkaProperties,
-    ): ProducerFactory<Any, Any> {
+    ): ProducerFactory<String, Any> {
         val props: Map<String, Any> = HashMap(kafkaProperties.buildProducerProperties())
         return DefaultKafkaProducerFactory(props)
     }
@@ -48,9 +48,12 @@ open class KafkaConfig {
     }
 
     @Bean
-    open fun kafkaTemplate(producerFactory: ProducerFactory<Any, Any>): KafkaTemplate<Any, Any> {
+    open fun kafkaTemplate(
+        producerFactory: ProducerFactory<String, Any>
+    ): KafkaTemplate<String, Any> {
         return KafkaTemplate(producerFactory)
     }
+
 
     @Bean
     open fun jsonMessageConverter(objectMapper: ObjectMapper): ByteArrayJsonMessageConverter {

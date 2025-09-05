@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 public class OutboxEventRelay {
 
     private final OutboxEventRepository outboxEventRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String,Object> kafkaTemplate;
 
     private final RetryPolicy retryPolicy = new DefaultRetryPolicy();
 
@@ -44,14 +44,14 @@ public class OutboxEventRelay {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Transactional
     protected void sendOnce(OutboxEvent event) {
         event.markAsSending();
 
         try {
-            SendResult<String, Object> result = kafkaTemplate
-                .send(event.getTopic(), event.getEventKey(), event.toGeneralEnvelopeEvent())
-                .get();
+            SendResult<String, Object> result = (SendResult<String, Object>) kafkaTemplate
+                .send(event.getTopic(), event.getEventKey(), event.toGeneralEnvelopeEvent()).get();
 
             event.markAsPublished();
             outboxEventRepository.save(event);

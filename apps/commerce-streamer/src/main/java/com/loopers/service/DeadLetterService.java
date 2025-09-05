@@ -32,6 +32,13 @@ public class DeadLetterService {
                                Exception exception, Integer retryAttempts) {
         
         try {
+            // 이미 DLT에 있는지 확인
+            Optional<DeadLetterEvent> existing = deadLetterEventRepository.findByMessageId(envelope.messageId());
+            if (existing.isPresent()) {
+                log.warn("Event already exists in DLT - messageId: {}, skipping", envelope.messageId());
+                return;
+            }
+            
             String payload = objectMapper.writeValueAsString(envelope);
             
             DeadLetterEvent.FailureReason failureReason = determineFailureReason(exception);

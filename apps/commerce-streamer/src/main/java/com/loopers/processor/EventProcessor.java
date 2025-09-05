@@ -33,6 +33,14 @@ public class EventProcessor {
         log.info("Processing event - type: {}, messageId: {}, payload: {}",
             eventType, messageId, envelope.payload());
 
+        // 디버깅: 등록된 핸들러들 확인
+        log.info("Registered handlers: {}", eventHandlers.size());
+        for (EventHandler handler : eventHandlers) {
+            boolean canHandle = handler.canHandle(eventType);
+            log.info("Handler: {} - canHandle({}): {}", 
+                    handler.getClass().getSimpleName(), eventType, canHandle);
+        }
+
 
         List<CompletableFuture<Void>> futures = eventHandlers.stream()
             .filter(h -> h.canHandle(eventType))
