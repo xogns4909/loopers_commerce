@@ -2,6 +2,7 @@ package com.loopers.infrastructure.outbox;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import jakarta.persistence.AttributeConverter;
@@ -13,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PayloadJsonConverter implements AttributeConverter<Object, String> {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .findAndRegisterModules();
 
     @Override
     public String convertToDatabaseColumn(Object attribute) {
