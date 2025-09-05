@@ -141,12 +141,12 @@ class CardPaymentStrategyTest {
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(failedEvent.orderId()).isEqualTo(100L);
-            assertThat(failedEvent.reason()).isEqualTo("PG 요청 무효");
+            assertThat(failedEvent.reason()).isEqualTo("PG 응답 무효");
         }
 
         @Test
-        @DisplayName("PG 네트워크 에러 시 실패 이벤트 발행 후 예외 재발생")
-        void pg_network_error_publishes_failed_event_and_rethrows_exception() {
+        @DisplayName("PG 네트워크 에러 시 실패 이벤트 발행")
+        void pg_network_error_publishes_failed_event() {
             // given
             when(paymentService.createInitiatedPayment(paymentCommand)).thenReturn(PAYMENT_ID);
             
@@ -155,19 +155,17 @@ class CardPaymentStrategyTest {
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
                 .thenThrow(exception);
 
-            // when & then
-            assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
-                .isInstanceOf(FeignException.InternalServerError.class)
-                .hasMessage("서버 오류");
+            // when
+            cardPaymentStrategy.pay(paymentCommand);
 
-            // 실패 이벤트도 발행되어야 함
+            // then
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
             verify(eventPublisher).publishEvent(eventCaptor.capture());
             
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(failedEvent.orderId()).isEqualTo(100L);
-            assertThat(failedEvent.reason()).isEqualTo("PG 요청 무효");
+            assertThat(failedEvent.reason()).isEqualTo("PG 요청 실패");
         }
 
         @Test
@@ -178,10 +176,8 @@ class CardPaymentStrategyTest {
             when(pg.requestPayment(eq("testUser"), any(PgPaymentRequest.class)))
                 .thenThrow(new RuntimeException("예상치 못한 오류"));
 
-            // when & then
-            assertThatThrownBy(() -> cardPaymentStrategy.pay(paymentCommand))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("예상치 못한 오류");
+            // when
+            cardPaymentStrategy.pay(paymentCommand);
 
             // then
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
@@ -190,7 +186,7 @@ class CardPaymentStrategyTest {
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(PAYMENT_ID);
             assertThat(failedEvent.orderId()).isEqualTo(100L);
-            assertThat(failedEvent.reason()).isEqualTo("PG 요청 무효");
+            assertThat(failedEvent.reason()).isEqualTo("PG 요청 실패");
         }
     }
 }

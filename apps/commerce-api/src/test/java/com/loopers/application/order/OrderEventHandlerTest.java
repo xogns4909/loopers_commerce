@@ -5,12 +5,16 @@ import static org.mockito.Mockito.verify;
 import com.loopers.domain.payment.event.PaymentCompletedEvent;
 import com.loopers.domain.payment.event.PaymentFailedEvent;
 import com.loopers.domain.user.model.UserId;
+import com.loopers.infrastructure.event.Envelope;
+import com.loopers.infrastructure.event.EventType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.Instant;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderEventHandler 단위 테스트")
@@ -22,6 +26,8 @@ class OrderEventHandlerTest {
     @InjectMocks
     private OrderEventHandler orderEventHandler;
 
+
+
     @Test
     @DisplayName("PaymentCompletedEvent 수신 시 주문 완료 처리")
     void payment_completed_event_handles_order_completion() {
@@ -29,9 +35,17 @@ class OrderEventHandlerTest {
         PaymentCompletedEvent event = PaymentCompletedEvent.of(
             1L, 100L, UserId.of("testUser"), "tx_123456"
         );
+        
+        Envelope<PaymentCompletedEvent> envelope = Envelope.create(
+            UUID.randomUUID().toString(),
+            EventType.PAYMENT_COMPLETED.getValue(),
+            event,
+            "test-source",
+            UUID.randomUUID().toString()
+        );
 
         // when
-        orderEventHandler.onPaymentCompleted(event);
+        orderEventHandler.onPaymentCompleted(envelope);
 
         // then
         verify(orderTransactionService).handlePaymentCompleted(event);
@@ -44,9 +58,17 @@ class OrderEventHandlerTest {
         PaymentFailedEvent event = PaymentFailedEvent.of(
             1L, 100L, UserId.of("testUser"), "PG 서버 오류", "tx_123456"
         );
+        
+        Envelope<PaymentFailedEvent> envelope = Envelope.create(
+            UUID.randomUUID().toString(),
+            EventType.PAYMENT_FAILED.getValue(),
+            event,
+            "test-source",
+            UUID.randomUUID().toString()
+        );
 
         // when
-        orderEventHandler.onPaymentFailed(event);
+        orderEventHandler.onPaymentFailed(envelope);
 
         // then
         verify(orderTransactionService).handlePaymentFailed(event);

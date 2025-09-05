@@ -26,18 +26,12 @@ public class PgPaymentGateway {
     @CircuitBreaker(name = "pg-client", fallbackMethod = "requestPaymentFallback")
     public PgPaymentResponse requestPayment(String userId, PgPaymentRequest req) {
         PgApiResponse<PgPaymentResponse> res = pgClient.requestPayment(userId, req);
+        
 
-        if (res == null || res.meta() == null) {
-            throw new CoreException(ErrorType.INTERNAL_ERROR, "PG 응답/메타 없음");
-        }
+        PgPaymentResponse data = res.getValidatedData();
+        
 
-        if (!"success".equals(res.meta().result())) {
-            String msg = res.meta().message() != null ? res.meta().message() : "PG 실패(원인 불명)";
-            throw new CoreException(ErrorType.INTERNAL_ERROR, msg);
-        }
-
-        PgPaymentResponse data = res.data();
-        if (data == null || data.transactionKey() == null || data.transactionKey().isBlank()) {
+        if (data.transactionKey() == null || data.transactionKey().isBlank()) {
             throw new CoreException(ErrorType.INTERNAL_ERROR, "거래키 없음");
         }
 

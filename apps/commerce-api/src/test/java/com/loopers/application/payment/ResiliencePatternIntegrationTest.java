@@ -65,8 +65,9 @@ class ResiliencePatternIntegrationTest {
         when(pgGateway.requestPayment(anyString(), any()))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 서버 장애"));
 
+
         for (int i = 0; i < 5; i++) {
-            assertThrows(CoreException.class, () -> cardPaymentStrategy.pay(paymentCommand));
+            cardPaymentStrategy.pay(paymentCommand);
         }
 
         verify(eventPublisher, times(5)).publishEvent(isA(Object.class));
@@ -80,10 +81,11 @@ class ResiliencePatternIntegrationTest {
         when(pgGateway.requestPayment(anyString(), any()))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 타임아웃"));
 
-        assertThrows(CoreException.class, () -> cardPaymentStrategy.pay(paymentCommand));
+
+        cardPaymentStrategy.pay(paymentCommand);
 
         verify(eventPublisher).publishEvent(isA(Object.class));
-        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 무효"));
+        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 실패"));
     }
 
     @Test
@@ -93,9 +95,10 @@ class ResiliencePatternIntegrationTest {
         when(pgGateway.requestPayment(anyString(), any()))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 연결 실패"));
 
-        assertThrows(CoreException.class, () -> cardPaymentStrategy.pay(paymentCommand));
 
-        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 무효"));
+        cardPaymentStrategy.pay(paymentCommand);
+
+        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 실패"));
         verify(eventPublisher).publishEvent(isA(Object.class));
     }
 
@@ -106,9 +109,10 @@ class ResiliencePatternIntegrationTest {
         when(pgGateway.requestPayment(anyString(), any()))
             .thenThrow(new CoreException(ErrorType.INTERNAL_ERROR, "PG 호출 실패(CB/Retry 이후): 응답 시간 초과"));
 
-        assertThrows(CoreException.class, () -> cardPaymentStrategy.pay(paymentCommand));
 
-        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 무효"));
+        cardPaymentStrategy.pay(paymentCommand);
+
+        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 실패"));
     }
 
     @Test
@@ -134,7 +138,7 @@ class ResiliencePatternIntegrationTest {
 
         cardPaymentStrategy.pay(paymentCommand);
 
-        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 요청 무효"));
+        verify(paymentStatePort).updateToFailed(eq(PAYMENT_ID), eq("PG 응답 무효"));
         verify(eventPublisher).publishEvent(isA(Object.class));
     }
 

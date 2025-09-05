@@ -15,6 +15,7 @@ import com.loopers.domain.payment.model.PaymentAmount;
 import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.payment.model.PaymentStatus;
 import com.loopers.domain.user.model.UserId;
+import com.loopers.infrastructure.event.DomainEventBridge;
 import com.loopers.interfaces.api.payment.PaymentCallbackRequest;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -30,7 +31,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import com.loopers.infrastructure.event.DomainEventBridge;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PaymentCallbackService 단위 테스트")
@@ -40,7 +41,7 @@ class PaymentCallbackServiceTest {
     private PaymentRepository paymentRepository;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private DomainEventBridge eventBridge;
 
     @InjectMocks
     private PaymentServiceImpl paymentCallbackService;
@@ -93,7 +94,7 @@ class PaymentCallbackServiceTest {
             assertThat(result.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
 
             ArgumentCaptor<PaymentCompletedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentCompletedEvent.class);
-            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            verify(eventBridge).publish(eventCaptor.capture());
             
             PaymentCompletedEvent completedEvent = eventCaptor.getValue();
             assertThat(completedEvent.paymentId()).isEqualTo(1L);
@@ -128,7 +129,7 @@ class PaymentCallbackServiceTest {
             assertThat(result.getFailureReason()).isEqualTo("카드 한도 초과");
 
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
-            verify(eventPublisher).publishEvent(eventCaptor.capture());
+            verify(eventBridge).publish(eventCaptor.capture());
             
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(1L);
