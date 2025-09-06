@@ -6,6 +6,7 @@ import com.loopers.application.product.VersionClock;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -37,5 +38,21 @@ public class ProductCacheKeyGenerator extends CacheKeyGenerator {
         if (cmd.pageable() != null) params.put("page", cmd.pageable().getPageNumber());
 
         return buildKey(params);
+    }
+    
+
+    public List<String> generateEvictionKeys(Long productId) {
+        long version = Long.parseLong(versionClock.current(getNamespace()));
+        
+
+        String detailKey = createDetailKey(productId).toString();
+        
+
+        String listKeyPattern = String.format("%s:%s:v%d:list:*", getPrefix(), getNamespace(), version);
+        
+
+        String stockKey = String.format("%s:%s:v%d:stock:%d", getPrefix(), getNamespace(), version, productId);
+        
+        return List.of(detailKey, listKeyPattern, stockKey);
     }
 }

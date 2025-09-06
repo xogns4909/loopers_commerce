@@ -3,6 +3,7 @@ package com.loopers.domain.payment;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +17,7 @@ import com.loopers.domain.payment.model.PaymentMethod;
 import com.loopers.domain.payment.model.PaymentStatus;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import com.loopers.interfaces.api.payment.PaymentCallbackRequest;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -94,7 +96,7 @@ class PaymentCallbackServiceTest {
             assertThat(result.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
 
             ArgumentCaptor<PaymentCompletedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentCompletedEvent.class);
-            verify(eventBridge).publish(eventCaptor.capture());
+            verify(eventBridge).publishEvent(eq(EventType.PAYMENT_COMPLETED), eventCaptor.capture());
             
             PaymentCompletedEvent completedEvent = eventCaptor.getValue();
             assertThat(completedEvent.paymentId()).isEqualTo(1L);
@@ -129,7 +131,7 @@ class PaymentCallbackServiceTest {
             assertThat(result.getFailureReason()).isEqualTo("카드 한도 초과");
 
             ArgumentCaptor<PaymentFailedEvent> eventCaptor = ArgumentCaptor.forClass(PaymentFailedEvent.class);
-            verify(eventBridge).publish(eventCaptor.capture());
+            verify(eventBridge).publishEvent(eq(EventType.PAYMENT_FAILED),eventCaptor.capture());
             
             PaymentFailedEvent failedEvent = eventCaptor.getValue();
             assertThat(failedEvent.paymentId()).isEqualTo(1L);

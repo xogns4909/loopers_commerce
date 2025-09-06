@@ -3,7 +3,11 @@ package com.loopers.application.product;
 import com.loopers.application.order.OrderCommand.OrderItemCommand;
 import com.loopers.domain.product.ProductRepository;
 import com.loopers.domain.product.ProductService;
+import com.loopers.domain.product.event.StockShortageEvent;
 import com.loopers.domain.product.model.Product;
+import com.loopers.infrastructure.cache.keygen.ProductCacheKeyGenerator;
+import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import com.loopers.support.annotation.HandleConcurrency;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
@@ -20,6 +24,8 @@ import org.springframework.stereotype.Service;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
+    private final DomainEventBridge domainEventBridge;
+    private final ProductCacheKeyGenerator cacheKeyGenerator;
 
     @Override
     public Page<ProductInfo> getProducts(ProductSearchCommand command) {
@@ -40,9 +46,26 @@ public class ProductServiceImpl implements ProductService {
             Product product = productRepository.findWithPessimisticLockById(item.productId())
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
 
-            product.checkPurchasable(item.quantity());
+            try {
+                product.checkPurchasable(item.quantity());
+            } catch (CoreException e) {
+                if (e.getErrorType() == ErrorType.STOCK_SHORTAGE) {
+                    StockShortageEvent event = StockShortageEvent.of(
+                        product.id(),
+                        product.name(),
+                        product.stock().value(),
+                        item.quantity(),
+                        cacheKeyGenerator.generateEvictionKeys(product.id())
+                    );
+                    
+                    domainEventBridge.publishEvent(EventType.STOCK_SHORTAGE, event);
+                    log.warn("Stock shortage event published - productId: {}, current: {}, requested: {}", 
+                        product.id(), product.stock().value(), item.quantity());
+                }
+                throw e;
+            }
+            
             Product deductedProduct = product.deductStock(item.quantity());
-
             productRepository.save(deductedProduct);
         }
     }

@@ -8,6 +8,7 @@ import com.loopers.domain.user.model.UserId;
 import com.loopers.domain.like.event.ProductLikedEvent;
 import com.loopers.domain.like.event.ProductUnlikedEvent;
 import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import com.loopers.interfaces.api.like.LikedProductResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,8 @@ public class LikeServiceImpl implements LikeService {
         likeRepository.save(Like.create(command.userId(), command.productId()));
 
 
-        eventBridge.publish(ProductLikedEvent.of(command.productId(), command.userId().value(), "like-flow"));
+        eventBridge.publishEvent(EventType.PRODUCT_LIKED, 
+            ProductLikedEvent.of(command.productId(), command.userId().value(), "like-flow"));
         return LikeResult.LIKED;
     }
 
@@ -43,7 +45,8 @@ public class LikeServiceImpl implements LikeService {
         likeRepository.delete(command.userId(), command.productId());
 
 
-        eventBridge.publish(ProductUnlikedEvent.of(command.productId(), command.userId().value(), "unlike-flow"));
+        eventBridge.publishEvent(EventType.PRODUCT_UNLIKED, 
+            ProductUnlikedEvent.of(command.productId(), command.userId().value(), "unlike-flow"));
         return LikeResult.UNLIKED;
     }
 

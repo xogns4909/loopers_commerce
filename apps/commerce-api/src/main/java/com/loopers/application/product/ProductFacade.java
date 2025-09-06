@@ -5,6 +5,7 @@ import com.loopers.domain.product.event.ProductViewedEvent;
 import com.loopers.domain.product.like.ProductLikeService;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import com.loopers.interfaces.api.product.ProductResponse;
 import com.loopers.interfaces.api.product.ProductSearchRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,8 @@ public class ProductFacade {
 
         if (userId != null) {
             pageResult.getContent().forEach(product -> 
-                eventBridge.publish(ProductViewedEvent.ofListView(product.productId(), userId))
+                eventBridge.publishEvent(EventType.PRODUCT_VIEWED, 
+                    ProductViewedEvent.ofListView(product.productId(), userId))
             );
         }
         
@@ -38,7 +40,8 @@ public class ProductFacade {
         
 
         if (userId != null) {
-            eventBridge.publish(ProductViewedEvent.ofSingleView(productId, userId));
+            eventBridge.publishEvent(EventType.PRODUCT_VIEWED, 
+                ProductViewedEvent.ofSingleView(productId, userId));
         }
 
         return ProductResponse.from(productInfo);

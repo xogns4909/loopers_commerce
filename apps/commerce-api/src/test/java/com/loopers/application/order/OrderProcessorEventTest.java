@@ -15,6 +15,7 @@ import com.loopers.domain.product.ProductService;
 import com.loopers.domain.product.model.Price;
 import com.loopers.domain.user.model.UserId;
 import com.loopers.infrastructure.event.DomainEventBridge;
+import com.loopers.infrastructure.event.EventType;
 import java.math.BigDecimal;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -57,7 +58,7 @@ class OrderProcessorEventTest {
 
         // then:
         ArgumentCaptor<OrderCreatedEvent> cap = ArgumentCaptor.forClass(OrderCreatedEvent.class);
-        verify(eventBridge, times(1)).publish(cap.capture());
+        verify(eventBridge, times(1)).publishEvent(eq(EventType.ORDER_CREATED),cap.capture());
         OrderCreatedEvent evt = cap.getValue();
 
         Assertions.assertThat(evt.orderId()).isEqualTo(10L);
