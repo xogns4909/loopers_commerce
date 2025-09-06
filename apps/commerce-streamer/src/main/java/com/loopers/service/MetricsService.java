@@ -3,6 +3,7 @@ package com.loopers.service;
 import com.loopers.entity.EventMetric;
 import com.loopers.repository.EventMetricRepository;
 import com.loopers.event.GeneralEnvelopeEvent;
+import com.loopers.event.EventTypes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -31,27 +32,27 @@ public class MetricsService {
         try {
             // 이벤트 타입별 메트릭 처리
             switch (eventType) {
-                case "PRODUCT_VIEWED":
+                case EventTypes.PRODUCT_VIEWED:
                     incrementMetric(eventType, "view_count", metricDate, metricHour, BigDecimal.ONE);
                     break;
                     
-                case "PRODUCT_LIKED":
+                case EventTypes.PRODUCT_LIKED:
                     incrementMetric(eventType, "like_count", metricDate, metricHour, BigDecimal.ONE);
                     break;
                     
-                case "PRODUCT_UNLIKED":
+                case EventTypes.PRODUCT_UNLIKED:
                     incrementMetric(eventType, "unlike_count", metricDate, metricHour, BigDecimal.ONE);
                     break;
                     
-                case "ORDER_CREATED":
+                case EventTypes.ORDER_CREATED:
                     incrementMetric(eventType, "order_count", metricDate, metricHour, BigDecimal.ONE);
                     break;
                     
-                case "PAYMENT_COMPLETED":
+                case EventTypes.PAYMENT_COMPLETED:
                     incrementMetric(eventType, "payment_count", metricDate, metricHour, BigDecimal.ONE);
                     break;
                     
-                case "PAYMENT_FAILED":
+                case EventTypes.PAYMENT_FAILED:
                     incrementMetric(eventType, "payment_failed_count", metricDate, metricHour, BigDecimal.ONE);
                     break;
                     
