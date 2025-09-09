@@ -20,11 +20,7 @@ public class RankingService {
     private final RankingKeyGenerator keyGenerator;
     private final ScoreCalculator scoreCalculator;
     
-
     public void updateRanking(GeneralEnvelopeEvent event) {
-
-        log.debug("RankingService.updateRanking({})", event.toString());
-
         if (!rankingProperties.isEnabled()) {
             return;
         }
@@ -33,19 +29,38 @@ public class RankingService {
             return;
         }
         
-        String key = keyGenerator.generateDailyKey(LocalDate.now());
         Long productId = extractProductId(event.payload());
-        double score = scoreCalculator.calculateScore(event.type());
-        
-        if (productId != null) {
-            String member = keyGenerator.generateProductMember(productId);
-            
-
-            redisTemplate.opsForZSet().incrementScore(key, member, score);
-            redisTemplate.expire(key, Duration.ofHours(rankingProperties.getTtl().getHours()));
-            
-            log.debug("Ranking updated - key: {}, prodFinished callinguctId: {}, score: {}", key, productId, score);
+        if (productId == null) {
+            return;
         }
+        
+        String member = keyGenerator.generateProductMember(productId);
+        LocalDate today = LocalDate.now();
+        
+        // 1. 이벤트 타입별 키에 카운트 저장 (가중치 변경 시 재계산용)
+        String typeKey = keyGenerator.generateDailyKey(today, event.type());
+        redisTemplate.opsForZSet().incrementScore(typeKey, member, 1.0);
+        redisTemplate.expire(typeKey, Duration.ofHours(rankingProperties.getTtl().getHours()));
+        
+        // 2. 종합 점수 키에 가중치 적용된 점수 저장 (일반 조회용)
+        String totalKey = keyGenerator.generateDailyKey(today);
+        double weightedScore = getWeightedScore(event.type());
+        redisTemplate.opsForZSet().incrementScore(totalKey, member, weightedScore);
+        redisTemplate.expire(totalKey, Duration.ofHours(rankingProperties.getTtl().getHours()));
+        
+        log.debug("Ranking updated - typeKey: {}, totalKey: {}, productId: {}, weightedScore: {}", 
+                 typeKey, totalKey, productId, weightedScore);
+    }
+    
+    private double getWeightedScore(String eventType) {
+        var weights = rankingProperties.getScore().getWeights();
+        return switch(eventType) {
+            case "PRODUCT_VIEWED" -> weights.getView();
+            case "PRODUCT_LIKED" -> weights.getLike();
+            case "PRODUCT_UNLIKED" -> weights.getUnlike();
+            case "ORDER_CREATED" -> weights.getOrder();
+            default -> 0.0;
+        };
     }
     
     private Long extractProductId(JsonNode payload) {
