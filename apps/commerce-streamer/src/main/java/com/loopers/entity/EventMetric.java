@@ -11,11 +11,12 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "event_metrics", 
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"event_type", "metric_name", "metric_date", "metric_hour"})
+        @UniqueConstraint(columnNames = {"event_type", "metric_name", "metric_date", "metric_hour", "product_id"})
     },
     indexes = {
         @Index(name = "idx_event_type_date", columnList = "event_type, metric_date"),
-        @Index(name = "idx_metric_name_date", columnList = "metric_name, metric_date")
+        @Index(name = "idx_metric_name_date", columnList = "metric_name, metric_date"),
+        @Index(name = "idx_product_id_date", columnList = "product_id, metric_date")
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -36,17 +37,21 @@ public class EventMetric extends BaseEntity {
     @Column(name = "metric_hour", nullable = false)
     private Integer metricHour;
     
+    @Column(name = "product_id")
+    private Long productId;
+    
     @Column(name = "tags", length = 1000)
     private String tags;
 
     @Builder
     public EventMetric(String eventType, String metricName, BigDecimal metricValue, 
-                      String metricDate, Integer metricHour, String tags) {
+                      String metricDate, Integer metricHour, Long productId, String tags) {
         this.eventType = eventType;
         this.metricName = metricName;
         this.metricValue = metricValue;
         this.metricDate = metricDate;
         this.metricHour = metricHour;
+        this.productId = productId;
         this.tags = tags;
     }
     
