@@ -4,11 +4,15 @@ import com.loopers.event.GeneralEnvelopeEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -35,32 +39,59 @@ public class RankingService {
         }
         
         String member = keyGenerator.generateProductMember(productId);
-        LocalDate today = LocalDate.now();
+        String signalKey = keyGenerator.generateSignalKey(LocalDate.now(), event.type());
         
-        // 1. 이벤트 타입별 키에 카운트 저장 (가중치 변경 시 재계산용)
-        String typeKey = keyGenerator.generateDailyKey(today, event.type());
-        redisTemplate.opsForZSet().incrementScore(typeKey, member, 1.0);
-        redisTemplate.expire(typeKey, Duration.ofHours(rankingProperties.getTtl().getHours()));
+        // 신호별 ZSET에만 저장 (점수 1.0 고정)
+        redisTemplate.opsForZSet().incrementScore(signalKey, member, 1.0);
+        redisTemplate.expire(signalKey, Duration.ofDays(30));
         
-        // 2. 종합 점수 키에 가중치 적용된 점수 저장 (일반 조회용)
-        String totalKey = keyGenerator.generateDailyKey(today);
-        double weightedScore = getWeightedScore(event.type());
-        redisTemplate.opsForZSet().incrementScore(totalKey, member, weightedScore);
-        redisTemplate.expire(totalKey, Duration.ofHours(rankingProperties.getTtl().getHours()));
-        
-        log.debug("Ranking updated - typeKey: {}, totalKey: {}, productId: {}, weightedScore: {}", 
-                 typeKey, totalKey, productId, weightedScore);
+        log.debug("Ranking signal updated - key: {}, productId: {}", signalKey, productId);
     }
     
-    private double getWeightedScore(String eventType) {
-        var weights = rankingProperties.getScore().getWeights();
-        return switch(eventType) {
-            case "PRODUCT_VIEWED" -> weights.getView();
-            case "PRODUCT_LIKED" -> weights.getLike();
-            case "PRODUCT_UNLIKED" -> weights.getUnlike();
-            case "ORDER_CREATED" -> weights.getOrder();
-            default -> 0.0;
-        };
+    public void updateRankingBatch(List<GeneralEnvelopeEvent> events) {
+        if (!rankingProperties.isEnabled() || events.isEmpty()) {
+            return;
+        }
+        
+        Map<String, Map<Long, Long>> eventCounts = events.stream()
+            .filter(event -> scoreCalculator.isRankingEvent(event.type()))
+            .filter(event -> extractProductId(event.payload()) != null)
+            .collect(Collectors.groupingBy(
+                GeneralEnvelopeEvent::type,
+                Collectors.groupingBy(
+                    event -> extractProductId(event.payload()),
+                    Collectors.counting()
+                )
+            ));
+        
+        if (eventCounts.isEmpty()) {
+            return;
+        }
+        
+        LocalDate today = LocalDate.now();
+        
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            for (Map.Entry<String, Map<Long, Long>> eventEntry : eventCounts.entrySet()) {
+                String eventType = eventEntry.getKey();
+                String signalKey = keyGenerator.generateSignalKey(today, eventType);
+                
+                for (Map.Entry<Long, Long> productEntry : eventEntry.getValue().entrySet()) {
+                    Long productId = productEntry.getKey();
+                    Long count = productEntry.getValue();
+                    String member = keyGenerator.generateProductMember(productId);
+                    
+                    connection.zIncrBy(signalKey.getBytes(), count.doubleValue(), member.getBytes());
+                }
+                
+                int ttlSeconds = 30 * 24 * 3600; // 30일
+                connection.expire(signalKey.getBytes(), ttlSeconds);
+            }
+            return null;
+        });
+        
+        log.info("Ranking batch updated - events: {}, unique products: {}", 
+                events.size(), 
+                eventCounts.values().stream().mapToLong(m -> m.size()).sum());
     }
     
     private Long extractProductId(JsonNode payload) {

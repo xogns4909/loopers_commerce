@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -33,5 +34,15 @@ public class MetricsHandler implements EventHandler {
         
         metricsService.recordMetric(envelope);
         rankingService.updateRanking(envelope);
+    }
+    
+    public void handleBatch(List<GeneralEnvelopeEvent> envelopes) {
+        log.info("MetricsHandler processing batch - count: {}", envelopes.size());
+        
+        for (GeneralEnvelopeEvent envelope : envelopes) {
+            metricsService.recordMetric(envelope);
+        }
+        
+        rankingService.updateRankingBatch(envelopes);
     }
 }

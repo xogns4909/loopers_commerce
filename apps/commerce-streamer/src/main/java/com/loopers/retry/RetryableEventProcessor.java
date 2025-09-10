@@ -27,9 +27,7 @@ public class RetryableEventProcessor {
         processWithRetry(envelope, originalTopic, partitionId, offsetId, consumerGroup, RetryPolicy.STANDARD);
     }
 
-    /**
-     * 지정된 재시도 정책으로 이벤트 처리
-     */
+
     public void processWithRetry(GeneralEnvelopeEvent envelope, String originalTopic, 
                                Integer partitionId, Long offsetId, String consumerGroup, 
                                RetryPolicy retryPolicy) {
