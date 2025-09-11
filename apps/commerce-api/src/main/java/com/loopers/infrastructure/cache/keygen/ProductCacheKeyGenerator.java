@@ -40,6 +40,12 @@ public class ProductCacheKeyGenerator extends CacheKeyGenerator {
         return buildKey(params);
     }
     
+    public CacheKey createBatchKey(List<Long> productIds) {
+
+        List<Long> sortedIds = productIds.stream().sorted().toList();
+        return buildKey(Map.of("type", "batch", "ids", sortedIds));
+    }
+    
 
     public List<String> generateEvictionKeys(Long productId) {
         long version = Long.parseLong(versionClock.current(getNamespace()));
