@@ -1,16 +1,14 @@
 package com.loopers.interfaces.api.ranking;
 
+import com.loopers.application.ranking.RankingFacade;
 import com.loopers.interfaces.api.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+
 
 @Slf4j
 @RestController
@@ -18,42 +16,60 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RankingController {
     
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RankingFacade rankingFacade;
     
     @GetMapping
-    public ApiResponse<List<RankingEntry>> getRankings(
+    public ApiResponse<RankingResponse> getRankings(
+        @RequestParam(required = false) String date,
         @RequestParam(defaultValue = "20") int size,
-        @RequestParam(defaultValue = "0") int page
+        @RequestParam(defaultValue = "1") int page
     ) {
-        // 전날 확정 랭킹 제공
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        String sumKey = generateSumKey(yesterday);
+        LocalDate targetDate = parseDate(date);
         
-        int start = page * size;
-        int end = start + size - 1;
+        log.info("랭킹 조회 요청 - date: {}, size: {}, page: {}", targetDate, size, page);
         
-        log.info("Ranking request - date: {}, size: {}, page: {}", yesterday, size, page);
+        RankingFacade.RankingResult result = rankingFacade.getRankings(targetDate, page, size);
         
-        Set<String> products = redisTemplate.opsForZSet().reverseRange(sumKey, start, end);
-        
-        if (products == null || products.isEmpty()) {
-            log.info("No ranking data found for date: {}", yesterday);
-            return ApiResponse.success(List.of());
+        if (result.isEmpty()) {
+            log.info("랭킹 데이터가 없음: {}", targetDate);
+            return ApiResponse.success(RankingResponse.empty(targetDate));
         }
         
-        List<RankingEntry> entries = products.stream()
-            .map(productKey -> {
-                Long productId = Long.parseLong(productKey.replace("product:", ""));
-                Double score = redisTemplate.opsForZSet().score(sumKey, productKey);
-                return new RankingEntry(productId, score != null ? score : 0.0);
-            })
-            .collect(Collectors.toList());
-            
-        log.info("Ranking response - date: {}, results: {}", yesterday, entries.size());
-        return ApiResponse.success(entries);
+        RankingResponse response = RankingResponse.of(
+            result.actualDate(),
+            result.entries(), 
+            result.source(),
+            page,
+            size
+        );
+        
+        return ApiResponse.success(response);
     }
     
-    private String generateSumKey(LocalDate date) {
-        return "rk:sum:" + date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+    @GetMapping("/products/{productId}")
+    public ApiResponse<ProductRankingInfo> getProductRanking(
+        @PathVariable Long productId,
+        @RequestParam(required = false) String date
+    ) {
+        LocalDate targetDate = parseDate(date);
+        
+        ProductRankingInfo info = rankingFacade.getProductRanking(productId, targetDate);
+        
+        log.info("상품 랭킹 조회: {} - 순위: {}, 점수: {}", productId, info.rank(), info.score());
+        
+        return ApiResponse.success(info);
+    }
+    
+    private LocalDate parseDate(String date) {
+        if (date == null || date.trim().isEmpty()) {
+            return LocalDate.now();
+        }
+        
+        try {
+            return LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        } catch (Exception e) {
+            log.warn("잘못된 날짜 형식: {}, 오늘 날짜 사용", date);
+            return LocalDate.now();
+        }
     }
 }
