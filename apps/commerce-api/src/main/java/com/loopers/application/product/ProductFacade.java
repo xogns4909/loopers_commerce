@@ -9,6 +9,9 @@ import com.loopers.infrastructure.event.EventType;
 import com.loopers.interfaces.api.product.ProductResponse;
 import com.loopers.interfaces.api.product.ProductSearchRequest;
 import jakarta.transaction.Transactional;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -49,12 +52,27 @@ public class ProductFacade {
     }
     
     private Long getProductRank(Long productId) {
-            LocalDate yesterday = LocalDate.now().minusDays(1);
-            String sumKey = "rk:sum:" + yesterday.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        for (int i = 0; i < 3; i++) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            String rankingKey = "ranking:all:" + date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             String member = "product:" + productId;
             
-            Long rank = redisTemplate.opsForZSet().reverseRank(sumKey, member);
-            return rank != null ? rank + 1 : null; // Redis 0-based → 1-based
+            Long rank = redisTemplate.opsForZSet().reverseRank(rankingKey, member);
+            if (rank != null) {
+                return rank + 1;
+            }
+        }
+        
+        return null;
+    }
 
+
+    public Map<Long, ProductInfo> getProductInfoMap(List<Long> productIds) {
+        return productService.getProductsByIds(productIds).stream()
+            .collect(Collectors.toMap(
+                ProductInfo::productId,
+                productInfo -> productInfo
+            ));
     }
 }

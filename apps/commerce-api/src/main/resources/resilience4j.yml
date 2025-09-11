@@ -3,23 +3,23 @@ resilience4j:
   circuitbreaker:
     instances:
       pg-client:
-        failure-rate-threshold: 50          # 실패율 50% 이상 시 Circuit Open
+        failure-rate-threshold: 60          # 실패율 60% 이상 시 Circuit Open (50% → 60%)
         slow-call-rate-threshold: 70        # 느린 호출 70% 이상
-        slow-call-duration-threshold: 3s    # 3초 이상을 느린 호출로 간주
-        minimum-number-of-calls: 5          # 최소 5회 호출 후 Circuit 상태 판단
-        sliding-window-size: 10             # 10개 호출을 기준으로 슬라이딩 윈도우
+        slow-call-duration-threshold: 2s    # 2초 이상을 느린 호출로 간주 (3s → 2s)
+        minimum-number-of-calls: 10         # 최소 10회 호출 후 Circuit 상태 판단 (5 → 10)
+        sliding-window-size: 20             # 20개 호출을 기준으로 슬라이딩 윈도우 (10 → 20)
         sliding-window-type: COUNT_BASED    # 개수 기반 윈도우
-        wait-duration-in-open-state: 30s    # Circuit Open 후 30초 대기
-        permitted-number-of-calls-in-half-open-state: 3  # Half-Open에서 3회 시도
+        wait-duration-in-open-state: 10s    # Circuit Open 후 10초 대기 (30s → 10s)
+        permitted-number-of-calls-in-half-open-state: 5  # Half-Open에서 5회 시도 (3 → 5)
         automatic-transition-from-open-to-half-open-enabled: true
         
   # Retry 설정  
   retry:
     instances:
       pg-client:
-        max-attempts: 3                     # 최대 3회 시도 (1회 원본 + 2회 재시도)
-        wait-duration: 1s                   # 1초 간격
-        exponential-backoff-multiplier: 2   # 지수 백오프 (1s, 2s, 4s)
+        max-attempts: 2                     # 최대 2회 시도 (3 → 2, 빠른 실패)
+        wait-duration: 500ms                # 500ms 간격 (1s → 500ms)
+        exponential-backoff-multiplier: 2   # 지수 백오프 (500ms, 1s)
         randomized-delay-factor: 0.2        # ±20% 지터 추가
         retry-exceptions:
           - java.net.SocketTimeoutException
@@ -42,15 +42,15 @@ resilience4j:
   timelimiter:
     instances:
       pg-client:
-        timeout-duration: 5s                # 전체 실행 시간 제한 (재시도 포함)
+        timeout-duration: 3s                # 전체 실행 시간 제한 (5s → 3s, 결제는 빨라야 함)
         cancel-running-future: true
 
   # Bulkhead 설정 (동시 실행 제한)
   bulkhead:
     instances:
       pg-client:
-        max-concurrent-calls: 20            # 최대 20개 동시 호출
-        max-wait-duration: 1s               # 1초 대기
+        max-concurrent-calls: 30            # 최대 30개 동시 호출 (20 → 30)
+        max-wait-duration: 500ms            # 500ms 대기 (1s → 500ms)
 
 # 메트릭 활성화
 management:

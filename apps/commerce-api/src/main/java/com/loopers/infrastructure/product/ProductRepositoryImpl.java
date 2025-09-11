@@ -151,4 +151,28 @@ public class ProductRepositoryImpl implements ProductRepository {
     public Optional<Product> findWithPessimisticLockById(Long productId) {
         return jpaProductRepository.findWithPessimisticLockById(productId).map(ProductEntity::toModel);
     }
+    
+    @Override
+    public List<ProductInfo> findProductInfosByIds(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+        
+        return queryFactory
+            .select(new QProductInfo(
+                product.id,
+                product.name,
+                brand.name,
+                product.price,
+                productLike.likeCount.coalesce(0)
+            ))
+            .from(product)
+            .join(brand).on(product.brandId.eq(brand.id))
+            .leftJoin(productLike).on(productLike.productId.eq(product.id))
+            .where(
+                product.deletedAt.isNull()
+                    .and(product.id.in(productIds))
+            )
+            .fetch();
+    }
 }
