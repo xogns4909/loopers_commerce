@@ -1,7 +1,8 @@
 package com.loopers.ranking;
 
-import com.loopers.event.GeneralEnvelopeEvent;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.loopers.event.EventTypes;
+import com.loopers.event.GeneralEnvelopeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisCallback;
@@ -10,94 +11,122 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
+/**
+ * Redis 가중치 관리 기반 랭킹 서비스
+ * MetricsHandler와 협력하여 Redis ZSET 기반 랭킹 관리
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RankingService {
     
     private final RedisTemplate<String, String> redisTemplate;
-    private final RankingProperties rankingProperties;
-    private final RankingKeyGenerator keyGenerator;
-    private final ScoreCalculator scoreCalculator;
+    private final WeightManager weightManager;
     
-    public void updateRanking(GeneralEnvelopeEvent event) {
-        if (!rankingProperties.isEnabled()) {
-            return;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    
+    /**
+     * 단일 이벤트 랭킹 업데이트 (MetricsHandler에서 호출)
+     */
+    public void updateRanking(GeneralEnvelopeEvent envelope) {
+        String eventType = envelope.type();
+        JsonNode payload = envelope.payload();
+        
+        Double score = calculateScore(eventType, payload);
+        Long productId = extractProductId(payload);
+        
+        if (score != null && productId != null) {
+            String key = generateRankingKey(LocalDate.now());
+            String member = "product:" + productId;
+            
+            redisTemplate.opsForZSet().incrementScore(key, member, score);
+            setTtlIfNeeded(key);
+            
+            log.debug("랭킹 업데이트: {} -> {} (+{})", member, key, score);
         }
-        
-        if (!scoreCalculator.isRankingEvent(event.type())) {
-            return;
-        }
-        
-        Long productId = extractProductId(event.payload());
-        if (productId == null) {
-            return;
-        }
-        
-        String member = keyGenerator.generateProductMember(productId);
-        String signalKey = keyGenerator.generateSignalKey(LocalDate.now(), event.type());
-
-        redisTemplate.opsForZSet().incrementScore(signalKey, member, 1.0);
-        redisTemplate.expire(signalKey, Duration.ofDays(30));
-        
-        log.debug("Ranking signal updated - key: {}, productId: {}", signalKey, productId);
     }
     
-    public void updateRankingBatch(List<GeneralEnvelopeEvent> events) {
-        if (!rankingProperties.isEnabled() || events.isEmpty()) {
-            return;
-        }
-        
-        Map<String, Map<Long, Long>> eventCounts = events.stream()
-            .filter(event -> scoreCalculator.isRankingEvent(event.type()))
-            .filter(event -> extractProductId(event.payload()) != null)
-            .collect(Collectors.groupingBy(
-                GeneralEnvelopeEvent::type,
-                Collectors.groupingBy(
-                    event -> extractProductId(event.payload()),
-                    Collectors.counting()
-                )
-            ));
-        
-        if (eventCounts.isEmpty()) {
-            return;
-        }
-        
-        LocalDate today = LocalDate.now();
+    /**
+     * 배치 이벤트 랭킹 업데이트 (MetricsHandler에서 호출)
+     */
+    public void updateRankingBatch(List<GeneralEnvelopeEvent> envelopes) {
+        String todayKey = generateRankingKey(LocalDate.now());
         
         redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-            for (Map.Entry<String, Map<Long, Long>> eventEntry : eventCounts.entrySet()) {
-                String eventType = eventEntry.getKey();
-                String signalKey = keyGenerator.generateSignalKey(today, eventType);
+            for (GeneralEnvelopeEvent envelope : envelopes) {
+                Double score = calculateScore(envelope.type(), envelope.payload());
+                Long productId = extractProductId(envelope.payload());
                 
-                for (Map.Entry<Long, Long> productEntry : eventEntry.getValue().entrySet()) {
-                    Long productId = productEntry.getKey();
-                    Long count = productEntry.getValue();
-                    String member = keyGenerator.generateProductMember(productId);
-                    
-                    connection.zIncrBy(signalKey.getBytes(), count.doubleValue(), member.getBytes());
+                if (score != null && productId != null) {
+                    String member = "product:" + productId;
+                    redisTemplate.opsForZSet().incrementScore(todayKey, member, score);
                 }
-                
-                int ttlSeconds = 30 * 24 * 3600; // 30일
-                connection.expire(signalKey.getBytes(), ttlSeconds);
             }
             return null;
         });
         
-        log.info("Ranking batch updated - events: {}, unique products: {}", 
-                events.size(), 
-                eventCounts.values().stream().mapToLong(m -> m.size()).sum());
+        setTtlIfNeeded(todayKey);
+        log.info("배치 랭킹 업데이트 완료: {} 개 이벤트", envelopes.size());
+    }
+    
+    private Double calculateScore(String eventType, JsonNode payload) {
+        return switch (eventType) {
+            case EventTypes.PRODUCT_VIEWED -> weightManager.getWeight(RankingEventType.PRODUCT_VIEWED);
+            case EventTypes.PRODUCT_LIKED -> weightManager.getWeight(RankingEventType.PRODUCT_LIKED);
+            case EventTypes.PRODUCT_UNLIKED -> -weightManager.getWeight(RankingEventType.PRODUCT_LIKED); // 좋아요 취소
+            case EventTypes.ORDER_CREATED -> {
+                double orderAmount = extractOrderAmount(payload);
+                double weight = weightManager.getWeight(RankingEventType.ORDER_CREATED);
+                yield weight * Math.log(1 + orderAmount / 1000.0); // 로그 스케일링
+            }
+            default -> null;
+        };
     }
     
     private Long extractProductId(JsonNode payload) {
-        if (payload == null || !payload.has("productId")) {
-            log.warn("payload에 productId가 없습니다: {}", payload);
-            return null;
+        JsonNode productIdNode = payload.get("productId");
+        if (productIdNode != null && productIdNode.isNumber()) {
+            return productIdNode.asLong();
         }
-        return payload.get("productId").asLong();
+        
+        // OrderCreated 이벤트의 경우 items 배열에서 추출
+        JsonNode itemsNode = payload.get("items");
+        if (itemsNode != null && itemsNode.isArray() && itemsNode.size() > 0) {
+            JsonNode firstItem = itemsNode.get(0);
+            JsonNode itemProductId = firstItem.get("productId");
+            if (itemProductId != null && itemProductId.isNumber()) {
+                return itemProductId.asLong();
+            }
+        }
+        
+        return null;
+    }
+    
+    private double extractOrderAmount(JsonNode payload) {
+        JsonNode itemsNode = payload.get("items");
+        if (itemsNode != null && itemsNode.isArray() && itemsNode.size() > 0) {
+            JsonNode firstItem = itemsNode.get(0);
+            JsonNode priceNode = firstItem.get("price");
+            JsonNode quantityNode = firstItem.get("quantity");
+            
+            if (priceNode != null && quantityNode != null) {
+                return priceNode.asDouble() * quantityNode.asInt();
+            }
+        }
+        return 1.0;
+    }
+    
+    private String generateRankingKey(LocalDate date) {
+        return "ranking:all:" + date.format(DATE_FORMATTER);
+    }
+    
+    private void setTtlIfNeeded(String key) {
+        Long ttl = redisTemplate.getExpire(key);
+        if (ttl == null || ttl == -1) {
+            redisTemplate.expire(key, Duration.ofDays(2));
+        }
     }
 }
