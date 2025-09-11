@@ -30,7 +30,7 @@ public class RankingKeyGenerator {
     }
     
     public String generateSumKey(LocalDate date) {
-        return "rk:all:" + date.format(DATE_FORMATTER);
+        return "ranking:all:" + date.format(DATE_FORMATTER);
     }
     
     public String generateProductMember(Long productId) {
