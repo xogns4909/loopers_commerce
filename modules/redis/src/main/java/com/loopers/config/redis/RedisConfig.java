@@ -3,6 +3,7 @@ package com.loopers.config.redis;
 
 import io.lettuce.core.ReadFrom;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import java.util.function.Consumer;
 
 @Configuration
 @EnableConfigurationProperties(RedisProperties.class)
+@ConditionalOnProperty(prefix = "datasource.redis", name = "enabled", havingValue = "true")
 public class RedisConfig{
     private static final String CONNECTION_MASTER = "redisConnectionMaster";
     public static final String REDIS_TEMPLATE_MASTER = "redisTemplateMaster";

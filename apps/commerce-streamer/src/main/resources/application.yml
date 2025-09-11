@@ -1,0 +1,96 @@
+server:
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 1m
+    max-connections: 8192
+    accept-count: 100
+    keep-alive-timeout: 60s
+  max-http-request-header-size: 8KB
+
+spring:
+  main:
+    web-application-type: servlet
+  application:
+    name: commerce-streamer
+  profiles:
+    active: local
+  config:
+    import:
+      - jpa.yml
+      - logging.yml
+      - redis.yml  # Redis 없이 테스트하려면 주석 처리
+      - monitoring.yml
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      bootstrap-servers: localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: streamer-consumer-group
+      auto-offset-reset: latest
+      enable-auto-commit: false
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: "*"
+            value:
+              default:
+                type: com.loopers.event.GeneralEnvelopeEvent
+            use:
+              type:
+                headers: false
+    listener:
+      ack-mode: manual
+
+demo-kafka:
+  test:
+    topic-name: demo.internal.topic-v1
+
+# DLT 관련 설정
+app:
+  cleanup:
+    processed-events:
+      retention-days: 30  # 처리 완료 이벤트 보관 기간
+    dead-letter-events:
+      retention-days: 90  # 해결된 DLT 이벤트 보관 기간
+    stale-processing:
+      timeout-hours: 2    # 처리 중 상태 타임아웃
+  retry:
+    default-policy: STANDARD  # FAST, STANDARD, AGGRESSIVE
+  metrics:
+    enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local, test
+
+server:
+  port: 8000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: qa
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prd
+
+springdoc:
+  api-docs:
+    enabled: false
