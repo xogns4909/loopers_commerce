@@ -40,8 +40,7 @@ public class RankingService {
         
         String member = keyGenerator.generateProductMember(productId);
         String signalKey = keyGenerator.generateSignalKey(LocalDate.now(), event.type());
-        
-        // 신호별 ZSET에만 저장 (점수 1.0 고정)
+
         redisTemplate.opsForZSet().incrementScore(signalKey, member, 1.0);
         redisTemplate.expire(signalKey, Duration.ofDays(30));
         

@@ -9,8 +9,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.kafka.annotation.EnableKafka;
 
 import java.util.TimeZone;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableKafka
+@EnableScheduling
 @ConfigurationPropertiesScan
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = "com.loopers.repository")

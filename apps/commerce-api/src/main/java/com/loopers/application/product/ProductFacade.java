@@ -13,7 +13,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Component
 @RequiredArgsConstructor
@@ -22,12 +26,10 @@ public class ProductFacade {
 
     private final ProductService productService;
     private final DomainEventBridge eventBridge;
-
+    private final RedisTemplate<String, String> redisTemplate;
 
     public Page<ProductInfo> getProducts(ProductSearchRequest request, Pageable pageable, UserId userId) {
         Page<ProductInfo> pageResult = productService.getProducts(ProductSearchCommand.from(request, pageable));
-
-        
         return pageResult;
     }
 
@@ -35,12 +37,24 @@ public class ProductFacade {
     public ProductResponse getProduct(Long productId, UserId userId) {
         ProductInfo productInfo = productService.getProduct(productId);
         
-        log.info("userId {} ",userId.getId());
         if (userId != null) {
             eventBridge.publishEvent(EventType.PRODUCT_VIEWED, 
                 ProductViewedEvent.ofSingleView(productId, userId));
         }
-        log.info("끄읏 ",""+userId);
-        return ProductResponse.from(productInfo);
+        
+
+        Long currentRank = getProductRank(productId);
+        
+        return ProductResponse.from(productInfo, currentRank);
+    }
+    
+    private Long getProductRank(Long productId) {
+            LocalDate yesterday = LocalDate.now().minusDays(1);
+            String sumKey = "rk:sum:" + yesterday.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String member = "product:" + productId;
+            
+            Long rank = redisTemplate.opsForZSet().reverseRank(sumKey, member);
+            return rank != null ? rank + 1 : null; // Redis 0-based → 1-based
+
     }
 }

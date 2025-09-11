@@ -7,19 +7,25 @@ public record ProductResponse(
     String name,
     String brandName,
     int price,
-    int likeCount
+    int likeCount,
+    Long currentRank
 ) {
 
     public static ProductResponse from(ProductInfo info) {
+        return from(info, null);
+    }
+    
+    public static ProductResponse from(ProductInfo info, Long currentRank) {
         if (info == null) {
-            return null; // 혹은 예외 던지기
+            return null;
         }
         return new ProductResponse(
             info.productId(),
             info.productName(),
             info.brandName(),
             info.price(),
-            info.likeCount()
+            info.likeCount(),
+            currentRank
         );
     }
 }
