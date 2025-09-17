@@ -1,0 +1,81 @@
+server:
+  port: 9090
+
+spring:
+  profiles:
+    active: local
+    
+  application:
+    name: ranking-batch
+    
+  # DataSource 직접 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/loopers
+    username: application
+    password: application
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        show_sql: false
+    
+  batch:
+    job:
+      enabled: false  # 자동 실행 방지
+    initialize-schema: never
+    
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+      
+# 배치 설정
+batch:
+  chunk-size: 1000
+  page-size: 1000
+  skip-limit: 100
+  
+# 랭킹 가중치 기본값
+ranking:
+  weights:
+    view: 0.1
+    like: 0.2
+    order: 0.7
+    
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+      
+logging:
+  level:
+    com.loopers.batch: DEBUG
+    org.springframework.batch: DEBUG
+    
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+      
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    
+logging:
+  level:
+    com.loopers.batch: INFO
+    org.springframework.batch: WARN
