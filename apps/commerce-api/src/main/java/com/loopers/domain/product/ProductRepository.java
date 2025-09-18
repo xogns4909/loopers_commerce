@@ -5,6 +5,7 @@ import com.loopers.application.product.ProductSearchCommand;
 import com.loopers.domain.product.model.Product;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository {
@@ -19,4 +20,7 @@ public interface ProductRepository {
     Optional<Product> findById(Long productId);
 
     Optional<Product> findWithPessimisticLockById(Long productId);
+    
+
+    List<ProductInfo> findProductInfosByIds(List<Long> productIds);
 }

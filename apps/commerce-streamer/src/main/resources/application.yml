@@ -63,6 +63,20 @@ app:
     default-policy: STANDARD  # FAST, STANDARD, AGGRESSIVE
   metrics:
     enabled: true
+  ranking:
+    enabled: true
+    batch:
+      enabled: true
+      size: 300
+      timeout-ms: 30000
+    score:
+      weights:
+        view: 0.1
+        like: 0.2
+        unlike: -0.2
+        order: 0.7
+    ttl:
+      hours: 48
 
 ---
 spring:

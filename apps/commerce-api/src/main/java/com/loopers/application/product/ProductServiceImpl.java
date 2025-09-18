@@ -88,4 +88,13 @@ public class ProductServiceImpl implements ProductService {
     public boolean existsProduct(Long productId) {
         return productRepository.existsById(productId);
     }
+    
+    @Override
+    public List<ProductInfo> getProductsByIds(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+        
+        return productRepository.findProductInfosByIds(productIds);
+    }
 }

@@ -4,6 +4,7 @@ import com.loopers.entity.EventMetric;
 import com.loopers.repository.EventMetricRepository;
 import com.loopers.event.GeneralEnvelopeEvent;
 import com.loopers.event.EventTypes;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -30,35 +31,37 @@ public class MetricsService {
         Integer metricHour = now.getHour();
         
         try {
-            // 이벤트 타입별 메트릭 처리
+
             switch (eventType) {
                 case EventTypes.PRODUCT_VIEWED:
-                    incrementMetric(eventType, "view_count", metricDate, metricHour, BigDecimal.ONE);
+                    Long productIdViewed = extractProductId(envelope.payload());
+                    if (productIdViewed != null) {
+                        incrementMetric(eventType, "view_count", metricDate, metricHour, productIdViewed, BigDecimal.ONE);
+                    }
                     break;
                     
                 case EventTypes.PRODUCT_LIKED:
-                    incrementMetric(eventType, "like_count", metricDate, metricHour, BigDecimal.ONE);
+                    Long productIdLiked = extractProductId(envelope.payload());
+                    if (productIdLiked != null) {
+                        incrementMetric(eventType, "like_count", metricDate, metricHour, productIdLiked, BigDecimal.ONE);
+                    }
                     break;
                     
                 case EventTypes.PRODUCT_UNLIKED:
-                    incrementMetric(eventType, "unlike_count", metricDate, metricHour, BigDecimal.ONE);
+                    Long productIdUnliked = extractProductId(envelope.payload());
+                    if (productIdUnliked != null) {
+                        incrementMetric(eventType, "unlike_count", metricDate, metricHour, productIdUnliked, BigDecimal.ONE);
+                    }
                     break;
                     
                 case EventTypes.ORDER_CREATED:
-                    incrementMetric(eventType, "order_count", metricDate, metricHour, BigDecimal.ONE);
-                    break;
-                    
-                case EventTypes.PAYMENT_COMPLETED:
-                    incrementMetric(eventType, "payment_count", metricDate, metricHour, BigDecimal.ONE);
-                    break;
-                    
-                case EventTypes.PAYMENT_FAILED:
-                    incrementMetric(eventType, "payment_failed_count", metricDate, metricHour, BigDecimal.ONE);
+                    // Order는 여러 Product를 포함할 수 있으므로 각각 처리
+                    processOrderCreatedEvent(envelope.payload(), metricDate, metricHour);
                     break;
                     
                 default:
-                    // 모든 이벤트에 대해 기본 카운트 증가
-                    incrementMetric(eventType, "event_count", metricDate, metricHour, BigDecimal.ONE);
+                    // 알 수 없는 이벤트는 무시
+                    log.debug("Unknown event type for metrics: {}", eventType);
                     break;
             }
             
@@ -74,21 +77,47 @@ public class MetricsService {
     
     private void incrementMetric(String eventType, String metricName, 
                                  String metricDate, Integer metricHour, 
-                                 BigDecimal incrementValue) {
-        
-        // UPSERT 패턴: 있으면 증가, 없으면 생성
+                                 Long productId, BigDecimal incrementValue) {
+
+
         EventMetric metric = eventMetricRepository
-            .findByEventTypeAndMetricNameAndMetricDateAndMetricHour(
-                eventType, metricName, metricDate, metricHour)
+            .findMetricByKey(eventType, metricName, metricDate, metricHour, productId)
             .orElseGet(() -> EventMetric.builder()
                 .eventType(eventType)
                 .metricName(metricName)
                 .metricDate(metricDate)
                 .metricHour(metricHour)
+                .productId(productId)
                 .metricValue(BigDecimal.ZERO)
                 .build());
         
         metric.incrementValue(incrementValue);
         eventMetricRepository.save(metric);
+    }
+
+    private Long extractProductId(JsonNode payload) {
+        if (payload == null || !payload.has("productId")) {
+            log.warn("payload에 productId가 없습니다: {}", payload);
+            return null;
+        }
+        return payload.get("productId").asLong();
+    }
+
+    private void processOrderCreatedEvent(JsonNode payload, String metricDate, Integer metricHour) {
+        if (payload == null || !payload.has("items")) {
+            log.warn("OrderCreated payload에 items가 없습니다: {}", payload);
+            return;
+        }
+        
+        JsonNode items = payload.get("items");
+        if (items.isArray()) {
+            for (JsonNode item : items) {
+                if (item.has("productId")) {
+                    Long productId = item.get("productId").asLong();
+                    incrementMetric(EventTypes.ORDER_CREATED, "order_count", 
+                                  metricDate, metricHour, productId, BigDecimal.ONE);
+                }
+            }
+        }
     }
 }

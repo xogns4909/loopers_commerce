@@ -4,11 +4,13 @@ import com.loopers.event.EventTypes;
 import com.loopers.event.GeneralEnvelopeEvent;
 import com.loopers.handler.EventHandler;
 import com.loopers.service.MetricsService;
+import com.loopers.ranking.RankingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -16,6 +18,7 @@ import java.util.Set;
 public class MetricsHandler implements EventHandler {
 
     private final MetricsService metricsService;
+    private final RankingService rankingService;
 
     @Override
     public boolean canHandle(String eventType) {
@@ -28,6 +31,18 @@ public class MetricsHandler implements EventHandler {
     public void handle(GeneralEnvelopeEvent envelope) {
         log.info("MetricsHandler processing event - type: {}, messageId: {}", 
                 envelope.type(), envelope.messageId());
+        
         metricsService.recordMetric(envelope);
+        rankingService.updateRanking(envelope);
+    }
+    
+    public void handleBatch(List<GeneralEnvelopeEvent> envelopes) {
+        log.info("MetricsHandler processing batch - count: {}", envelopes.size());
+        
+        for (GeneralEnvelopeEvent envelope : envelopes) {
+            metricsService.recordMetric(envelope);
+        }
+        
+        rankingService.updateRankingBatch(envelopes);
     }
 }

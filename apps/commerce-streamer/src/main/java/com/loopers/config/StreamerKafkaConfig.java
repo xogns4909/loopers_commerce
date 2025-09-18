@@ -39,6 +39,11 @@ public class StreamerKafkaConfig {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         
+
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 300);
+        props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1024);
+        props.put(ConsumerConfig.FETCH_MAX_WAIT_MS_CONFIG, 500);
+        
         return new DefaultKafkaConsumerFactory<>(props);
     }
     
@@ -52,6 +57,9 @@ public class StreamerKafkaConfig {
         
         factory.setConsumerFactory(consumerFactory);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        
+        // 배치 리스너 활성화
+        factory.setBatchListener(true);
 
         
         return factory;

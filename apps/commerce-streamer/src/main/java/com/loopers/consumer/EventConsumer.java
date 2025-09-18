@@ -1,8 +1,10 @@
 package com.loopers.consumer;
 
 import com.loopers.event.GeneralEnvelopeEvent;
+import com.loopers.handler.impl.MetricsHandler;
 import com.loopers.retry.RetryPolicy;
 import com.loopers.retry.RetryableEventProcessor;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class EventConsumer {
 
     private final RetryableEventProcessor retryableEventProcessor;
+    private final MetricsHandler metricsHandler;
 
     @KafkaListener(topics = "order-events.v1", groupId = "order-consumer")
     public void handleOrderEvents(GeneralEnvelopeEvent envelope, 
@@ -46,30 +49,24 @@ public class EventConsumer {
     }
 
     @KafkaListener(topics = "catalog-events.v1", groupId = "catalog-consumer")
-    public void handleCatalogEvents(GeneralEnvelopeEvent envelope,
+    public void handleCatalogEvents(List<GeneralEnvelopeEvent> envelopes,
                                    Acknowledgment ack,
                                    @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                    @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                    @Header(KafkaHeaders.OFFSET) long offset) {
         
-        log.info("Catalog event received - messageId: {}, type: {}, offset: {}:{}", 
-                envelope.messageId(), envelope.type(), partition, offset);
-        
-        try {
-            // 카탈로그 이벤트는 표준 재시도 정책 적용
+        log.info("Catalog events batch received - count: {}, topic: {}, partition: {}", 
+                envelopes.size(), topic, partition);
+
+        for (GeneralEnvelopeEvent envelope : envelopes) {
             retryableEventProcessor.processWithRetry(
                 envelope, topic, partition, offset, "catalog-consumer", RetryPolicy.STANDARD);
-            
-            ack.acknowledge();
-            log.debug("Catalog event acknowledged - messageId: {}", envelope.messageId());
-            
-        } catch (Exception e) {
-            log.error("Critical: Failed to process catalog event after all retries - messageId: {}. " +
-                     "Event has been sent to Dead Letter Table.", envelope.messageId(), e);
-            
-            // 재시도 로직에서 이미 DLT로 보냈으므로 ACK 처리
-            ack.acknowledge();
         }
+
+        metricsHandler.handleBatch(envelopes);
+        
+        ack.acknowledge();
+        log.debug("Catalog events batch processed successfully - count: {}", envelopes.size());
     }
 
     @KafkaListener(topics = "notification-events.v1", groupId = "notification-consumer")

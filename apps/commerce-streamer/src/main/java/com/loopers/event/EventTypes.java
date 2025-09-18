@@ -28,10 +28,10 @@ public final class EventTypes {
         STOCK_SHORTAGE, PRODUCT_UPDATED, PRICE_CHANGED, INVENTORY_UPDATED
     );
     
-    // 메트릭 집계 대상 이벤트
+
     public static final Set<String> METRIC_EVENTS = Set.of(
         PRODUCT_VIEWED, PRODUCT_LIKED, PRODUCT_UNLIKED,
-        ORDER_CREATED, PAYMENT_COMPLETED, PAYMENT_FAILED
+        ORDER_CREATED
     );
     
     // 캐시 무효화 대상 이벤트

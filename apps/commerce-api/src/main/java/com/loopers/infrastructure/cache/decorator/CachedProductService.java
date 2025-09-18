@@ -95,6 +95,21 @@ public class CachedProductService implements ProductService {
     }
 
     @Override
+    public List<ProductInfo> getProductsByIds(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+
+        CacheKey batchKey = keyGenerator.createBatchKey(productIds);
+        return cache.getOrLoad(
+            batchKey,
+            new TypeRef<List<ProductInfo>>() {},
+            () -> repo.findProductInfosByIds(productIds), // 이미 Repository에 구현되어 있음
+            policy
+        );
+    }
+
+    @Override
     public boolean existsProduct(Long productId) {
         return repo.existsById(productId);
     }
