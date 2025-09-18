@@ -25,16 +25,18 @@ public class MonthlyRankingWriter implements ItemWriter<MonthlyRankingMV>, StepE
     private final AtomicInteger processedCount = new AtomicInteger(0);
 
     @Value("#{jobParameters['targetDate']}")
-    private String targetDate;
+    private String targetDateParam;
+
+    private LocalDate snapshotDate;
 
     @Override
     @Transactional
     public void beforeStep(StepExecution stepExecution) {
-        LocalDate date = LocalDate.parse(targetDate);
-        repository.deleteByTargetDate(date);
-        log.info("월간 기존 데이터 삭제 완료 - 날짜: {}", date);
+        this.snapshotDate = LocalDate.parse(targetDateParam);
+        repository.deleteByTargetDate(snapshotDate);
+        log.info("월간 기존 데이터 삭제 완료 - 날짜: {}", snapshotDate);
         processedCount.set(0);
-        log.info("월간 랭킹 저장 시작 - 대상 날짜: {}", date);
+        log.info("월간 랭킹 저장 시작 - 대상 날짜: {}", snapshotDate);
     }
 
     @Override

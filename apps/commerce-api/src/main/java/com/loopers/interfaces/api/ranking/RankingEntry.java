@@ -1,12 +1,23 @@
 package com.loopers.interfaces.api.ranking;
 
 import com.loopers.application.product.ProductInfo;
+import lombok.Setter;
 
-/**
- * 랭킹 엔트리 (상품 정보 포함)
- */
-public record RankingEntry(
-    Long productId,
-    Double score,
-    ProductInfo productInfo  // 상품 메타데이터 (이름, 가격, 이미지 등)
-) {}
+import com.loopers.application.product.ProductInfo;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RankingEntry {
+
+    private Long productId;
+    private Double score;
+    private ProductInfo productInfo; // 상세(이름/가격/브랜드 등)
+}

@@ -2,10 +2,17 @@ package com.loopers.application.ranking;
 
 import com.loopers.application.product.ProductFacade;
 import com.loopers.application.product.ProductInfo;
+import com.loopers.application.ranking.dto.RankingResult;
+import com.loopers.domain.ranking.MonthlyRankingMV;
+import com.loopers.domain.ranking.WeeklyRankingMV;
+import com.loopers.infrastructure.ranking.MonthlyRankingRepository;
+import com.loopers.infrastructure.ranking.WeeklyRankingRepository;
 import com.loopers.interfaces.api.ranking.ProductRankingInfo;
 import com.loopers.interfaces.api.ranking.RankingEntry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
 import org.springframework.stereotype.Component;
@@ -15,169 +22,257 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * 랭킹 관련 비즈니스 로직을 담당하는 Facade
- * Controller와 실제 랭킹 데이터 처리 로직을 분리
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class RankingFacade {
-    
+
     private final RedisTemplate<String, String> redisTemplate;
     private final ProductFacade productFacade;
-    
-    /**
-     * 페이지네이션 지원 랭킹 조회 (Fallback 전략 포함)
-     */
-    public RankingResult getRankings(LocalDate targetDate, int page, int size) {
+    private final WeeklyRankingRepository weeklyRepo;
+    private final MonthlyRankingRepository monthlyRepo;
+
+    public RankingResult getRankings(PeriodType period, LocalDate targetDate, int page, int size) {
         int start = (page - 1) * size;
         int end = start + size - 1;
-        
-        log.info("랭킹 조회 시작 - date: {}, page: {}, size: {}", targetDate, page, size);
-        
-        // 1. Redis Fallback 전략 (오늘 → 어제 → 전전날)
-        RankingResult fallbackResult = getRankingWithFallback(targetDate, start, end);
-        
-        // 2. 상품 정보 enrichment (상품명, 가격 등 추가)
-        if (!fallbackResult.isEmpty()) {
-            List<RankingEntry> enrichedEntries = enrichWithProductInfo(fallbackResult.entries());
-            fallbackResult = fallbackResult.withEnrichedEntries(enrichedEntries);
+
+        log.info("랭킹 조회 시작 - period={}, date={}, page={}, size={}", period, targetDate, page, size);
+
+        RankingResult result;
+
+        switch (period) {
+            case DAILY -> {
+                // Redis (오늘 → 어제 → 그제)
+                result = fetchFromRedisWithFallback(targetDate, start, end);
+                if (!result.isEmpty()) {
+                    enrichEntriesWithProductInfo(result.getEntries());
+                    return result;
+                }
+                // 일간이 비어있으면 그냥 empty 반환
+                return RankingResult.builder()
+                    .actualDate(targetDate)
+                    .entries(List.of())
+                    .source("redis-empty")
+                    .build();
+            }
+            case WEEKLY -> {
+                result = fetchFromWeeklyDb(targetDate, page, size);
+                if (!result.isEmpty()) {
+                    enrichEntriesWithProductInfo(result.getEntries());
+                    return result;
+                }
+                // 주간 비면 empty
+                return RankingResult.builder()
+                    .actualDate(targetDate)
+                    .entries(List.of())
+                    .source("db-weekly-empty")
+                    .build();
+            }
+            case MONTHLY -> {
+                result = fetchFromMonthlyDb(targetDate, page, size);
+                if (!result.isEmpty()) {
+                    enrichEntriesWithProductInfo(result.getEntries());
+                    return result;
+                }
+                // 월간 비면 empty
+                return RankingResult.builder()
+                    .actualDate(targetDate)
+                    .entries(List.of())
+                    .source("db-monthly-empty")
+                    .build();
+            }
+            default -> {
+                // 방어 로직: 혹시 모르는 값이면 일간 규칙로
+                result = fetchFromRedisWithFallback(targetDate, start, end);
+                if (!result.isEmpty()) {
+                    enrichEntriesWithProductInfo(result.getEntries());
+                    return result;
+                }
+                return RankingResult.builder()
+                    .actualDate(targetDate)
+                    .entries(List.of())
+                    .source("unknown-period")
+                    .build();
+            }
         }
-        
-        log.info("랭킹 조회 완료 - 실제 날짜: {}, 결과 수: {}, 소스: {}", 
-                fallbackResult.actualDate(), fallbackResult.entries().size(), fallbackResult.source());
-        
-        return fallbackResult;
     }
-    
-    /**
-     * 개별 상품 랭킹 조회
-     */
+
+    // ====== 이하 기존 헬퍼들 유지 ======
+
     public ProductRankingInfo getProductRanking(Long productId, LocalDate targetDate) {
-        String key = generateRankingKey(targetDate);
         String member = "product:" + productId;
-        
-        Double score = redisTemplate.opsForZSet().score(key, member);
         Long rank = null;
-        
-        if (score != null) {
-            rank = redisTemplate.opsForZSet().reverseRank(key, member);
-            if (rank != null) {
-                rank += 1; // 0-based → 1-based
-            }
-        }
-        
-        return ProductRankingInfo.of(productId, targetDate, rank, score);
-    }
-    
-    /**
-     * Fallback 전략으로 랭킹 데이터 조회
-     */
-    private RankingResult getRankingWithFallback(LocalDate targetDate, int start, int end) {
+        Double score = null;
+        LocalDate actual = targetDate;
+
         for (int i = 0; i < 3; i++) {
-            LocalDate fallbackDate = targetDate.minusDays(i);
-            String key = generateRankingKey(fallbackDate);
-            
-            Set<TypedTuple<String>> results = 
-                redisTemplate.opsForZSet().reverseRangeWithScores(key, start, end);
-            
-            if (results != null && !results.isEmpty()) {
-                List<RankingEntry> entries = results.stream()
-                    .map(tuple -> {
-                        Long productId = parseProductId(tuple.getValue());
-                        Double score = tuple.getScore();
-                        return new RankingEntry(productId, score != null ? score : 0.0, null);
-                    })
-                    .filter(entry -> entry.productId() != null)
-                    .collect(Collectors.toList());
-                
-                String source = i == 0 ? "today" : (i == 1 ? "yesterday" : "day-before-yesterday");
-                return RankingResult.of(fallbackDate, entries, source);
+            LocalDate d = targetDate.minusDays(i);
+            String key = dailyKey(d);
+            Double s = redisTemplate.opsForZSet().score(key, member);
+            if (s != null) {
+                score = s;
+                Long r = redisTemplate.opsForZSet().reverseRank(key, member);
+                rank = (r == null) ? null : r + 1;
+                actual = d;
+                break;
             }
         }
-        
-        log.info("모든 Fallback 실패, 빈 랭킹 반환: {}", targetDate);
-        return RankingResult.empty(targetDate);
-    }
-    
-    /**
-     * 상품 정보로 랭킹 엔트리 enrichment (안전한 처리)
-     */
-    private List<RankingEntry> enrichWithProductInfo(List<RankingEntry> entries) {
-        if (entries.isEmpty()) {
-            return entries;
-        }
-        
-        List<Long> productIds = entries.stream()
-            .map(RankingEntry::productId)
-            .collect(Collectors.toList());
-        
+
+        ProductInfo productInfo = null;
         try {
-            // 배치로 한 번에 조회
-            Map<Long, ProductInfo> productInfoMap = productFacade.getProductInfoMap(productIds);
-            log.info("상품 정보 조회 결과: 요청={}, 응답={}", productIds.size(), productInfoMap.size());
-            
-            return entries.stream()
-                .map(entry -> {
-                    ProductInfo productInfo = productInfoMap.get(entry.productId());
-                    if (productInfo == null) {
-                        log.warn("상품 정보 누락: productId={} (랭킹에는 있지만 DB에서 조회 안됨)", entry.productId());
-                    }
-                    return new RankingEntry(entry.productId(), entry.score(), productInfo);
-                })
-                .filter(entry -> entry.productInfo() != null) // null인 항목 제거
-                .collect(Collectors.toList());
-                
+            Map<Long, ProductInfo> map = productFacade.getProductInfoMap(List.of(productId));
+            productInfo = map.get(productId);
         } catch (Exception e) {
-            log.error("상품 정보 조회 실패 - productIds: {}", productIds, e);
-            
-            // Graceful degradation: productInfo 없이라도 productId와 score는 제공
-            return entries.stream()
-                .map(entry -> new RankingEntry(entry.productId(), entry.score(), null))
-                .collect(Collectors.toList());
+            log.warn("상품 상세 조회 실패 productId={}", productId, e);
+        }
+
+        return ProductRankingInfo.builder()
+            .productId(productId)
+            .date(actual)
+            .rank(rank)
+            .score(score)
+            .productInfo(productInfo)
+            .build();
+    }
+
+    private RankingResult fetchFromRedisWithFallback(LocalDate targetDate, int start, int end) {
+        for (int i = 0; i < 3; i++) {
+            LocalDate d = targetDate.minusDays(i);
+            String key = dailyKey(d);
+            Set<TypedTuple<String>> tuples =
+                redisTemplate.opsForZSet().reverseRangeWithScores(key, start, end);
+            if (tuples != null && !tuples.isEmpty()) {
+                List<RankingEntry> entries = tuples.stream()
+                    .map(t -> RankingEntry.builder()
+                        .productId(parseProductId(t.getValue()))
+                        .score(t.getScore() == null ? 0.0 : t.getScore())
+                        .productInfo(null)
+                        .build())
+                    .filter(e -> e.getProductId() != null)
+                    .collect(Collectors.toList());
+                String src = (i == 0) ? "redis" : (i == 1 ? "redis-fallback-yesterday" : "redis-fallback-day-before");
+                return RankingResult.builder()
+                    .actualDate(d)
+                    .entries(entries)
+                    .source(src)
+                    .build();
+            }
+        }
+        return RankingResult.builder()
+            .actualDate(targetDate)
+            .entries(List.of())
+            .source("redis-empty")
+            .build();
+    }
+
+    private RankingResult fetchFromWeeklyDb(LocalDate targetDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        List<WeeklyRankingMV> rows = weeklyRepo.findByTargetDateOrderByRankNoAsc(targetDate, pageable);
+
+        LocalDate actual = targetDate;
+        String source = "db-weekly";
+
+        if (rows == null || rows.isEmpty()) {
+            LocalDate latest = weeklyRepo.findLatestTargetDate(targetDate);
+            if (latest == null) {
+                return RankingResult.builder()
+                    .actualDate(targetDate)
+                    .entries(List.of())
+                    .source("db-weekly-empty")
+                    .build();
+            }
+            rows = weeklyRepo.findByTargetDateOrderByRankNoAsc(latest, pageable);
+            actual = latest;
+            source = "db-weekly-fallback";
+        }
+
+        List<RankingEntry> entries = rows.stream()
+            .map(this::toEntryFromWeekly)
+            .collect(Collectors.toList());
+
+        return RankingResult.builder()
+            .actualDate(actual)
+            .entries(entries)
+            .source(source)
+            .build();
+    }
+
+    private RankingResult fetchFromMonthlyDb(LocalDate targetDate, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        List<MonthlyRankingMV> rows = monthlyRepo.findByTargetDateOrderByRankNoAsc(targetDate, pageable);
+
+        LocalDate actual = targetDate;
+        String source = "db-monthly";
+
+        if (rows == null || rows.isEmpty()) {
+            LocalDate latest = monthlyRepo.findLatestTargetDate(targetDate);
+            if (latest == null) {
+                return RankingResult.builder()
+                    .actualDate(targetDate)
+                    .entries(List.of())
+                    .source("db-monthly-empty")
+                    .build();
+            }
+            rows = monthlyRepo.findByTargetDateOrderByRankNoAsc(latest, pageable);
+            actual = latest;
+            source = "db-monthly-fallback";
+        }
+
+        List<RankingEntry> entries = rows.stream()
+            .map(this::toEntryFromMonthly)
+            .collect(Collectors.toList());
+
+        return RankingResult.builder()
+            .actualDate(actual)
+            .entries(entries)
+            .source(source)
+            .build();
+    }
+
+    private RankingEntry toEntryFromWeekly(WeeklyRankingMV mv) {
+        return RankingEntry.builder()
+            .productId(mv.getProductId())
+            .score(mv.getRankingScore()) // 필드명에 맞게
+            .productInfo(null)
+            .build();
+    }
+
+    private RankingEntry toEntryFromMonthly(MonthlyRankingMV mv) {
+        return RankingEntry.builder()
+            .productId(mv.getProductId())
+            .score(mv.getRankingScore())
+            .productInfo(null)
+            .build();
+    }
+
+    private void enrichEntriesWithProductInfo(List<RankingEntry> entries) {
+        if (entries == null || entries.isEmpty()) return;
+        List<Long> ids = entries.stream()
+            .map(RankingEntry::getProductId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        try {
+            Map<Long, ProductInfo> infoMap = productFacade.getProductInfoMap(ids);
+            for (RankingEntry e : entries) {
+                e.setProductInfo(infoMap.get(e.getProductId()));
+            }
+        } catch (Exception ex) {
+            log.warn("상품정보 배치 조회 실패", ex);
         }
     }
-    
-    private String generateRankingKey(LocalDate date) {
+
+    private String dailyKey(LocalDate date) {
         return "ranking:all:" + date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
     }
-    
+
     private Long parseProductId(String member) {
-        if (member == null || !member.startsWith("product:")) {
-            return null;
-        }
-        
+        if (member == null || !member.startsWith("product:")) return null;
         try {
             return Long.parseLong(member.substring(8));
         } catch (NumberFormatException e) {
-            log.warn("잘못된 상품 ID 형식: {}", member);
+            log.warn("잘못된 product member 형식: {}", member);
             return null;
-        }
-    }
-    
-    /**
-     * 랭킹 결과 데이터 클래스
-     */
-    public record RankingResult(
-        LocalDate actualDate,
-        List<RankingEntry> entries,
-        String source
-    ) {
-        public static RankingResult of(LocalDate date, List<RankingEntry> entries, String source) {
-            return new RankingResult(date, entries, source);
-        }
-        
-        public static RankingResult empty(LocalDate targetDate) {
-            return new RankingResult(targetDate, List.of(), "empty");
-        }
-        
-        public boolean isEmpty() {
-            return entries.isEmpty();
-        }
-        
-        public RankingResult withEnrichedEntries(List<RankingEntry> enrichedEntries) {
-            return new RankingResult(actualDate, enrichedEntries, source);
         }
     }
 }

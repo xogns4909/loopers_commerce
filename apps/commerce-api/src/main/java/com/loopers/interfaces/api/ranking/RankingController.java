@@ -1,6 +1,8 @@
 package com.loopers.interfaces.api.ranking;
 
+import com.loopers.application.ranking.PeriodType;
 import com.loopers.application.ranking.RankingFacade;
+import com.loopers.application.ranking.dto.RankingResult;
 import com.loopers.interfaces.api.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,62 +11,69 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/rankings")
 @RequiredArgsConstructor
 public class RankingController {
-    
+
     private final RankingFacade rankingFacade;
-    
+
+    /**
+     * 랭킹 조회
+     * period: daily | weekly | monthly (default: daily)
+     * date: yyyyMMdd (없으면 오늘)
+     */
     @GetMapping
     public ApiResponse<RankingResponse> getRankings(
+        @RequestParam(defaultValue = "daily") String period,
         @RequestParam(required = false) String date,
         @RequestParam(defaultValue = "20") int size,
         @RequestParam(defaultValue = "1") int page
     ) {
+        if (page < 1) page = 1;
+        if (size < 1) size = 20;
+
+        PeriodType p = PeriodType.from(period);
         LocalDate targetDate = parseDate(date);
-        
-        log.info("랭킹 조회 요청 - date: {}, size: {}, page: {}", targetDate, size, page);
-        
-        RankingFacade.RankingResult result = rankingFacade.getRankings(targetDate, page, size);
-        
+
+        log.info("랭킹 조회 요청 - period: {}, date: {}, size: {}, page: {}", p, targetDate, size, page);
+
+        RankingResult result = rankingFacade.getRankings(p, targetDate, page, size);
+
         if (result.isEmpty()) {
-            log.info("랭킹 데이터가 없음: {}", targetDate);
+            log.info("랭킹 데이터가 없음 - period: {}, date: {}", p, targetDate);
             return ApiResponse.success(RankingResponse.empty(targetDate));
         }
-        
+
         RankingResponse response = RankingResponse.of(
-            result.actualDate(),
-            result.entries(), 
-            result.source(),
+            result.getActualDate(),
+            result.getEntries(),
+            result.getSource(),
             page,
             size
         );
-        
+
         return ApiResponse.success(response);
     }
-    
+
     @GetMapping("/products/{productId}")
     public ApiResponse<ProductRankingInfo> getProductRanking(
         @PathVariable Long productId,
         @RequestParam(required = false) String date
     ) {
         LocalDate targetDate = parseDate(date);
-        
+
         ProductRankingInfo info = rankingFacade.getProductRanking(productId, targetDate);
-        
-        log.info("상품 랭킹 조회: {} - 순위: {}, 점수: {}", productId, info.rank(), info.score());
-        
+
+        log.info("상품 랭킹 조회 - productId: {}, date: {}, rank: {}, score: {}",
+            productId, targetDate, info.getRank(), info.getScore());
+
         return ApiResponse.success(info);
     }
-    
+
     private LocalDate parseDate(String date) {
-        if (date == null || date.trim().isEmpty()) {
-            return LocalDate.now();
-        }
-        
+        if (date == null || date.trim().isEmpty()) return LocalDate.now();
         try {
             return LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyyMMdd"));
         } catch (Exception e) {
