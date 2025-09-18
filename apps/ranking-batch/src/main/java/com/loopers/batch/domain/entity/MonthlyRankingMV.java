@@ -37,13 +37,11 @@ public class MonthlyRankingMV extends BaseEntity {
     
     @Column(name = "rank_no", nullable = false)
     private Integer rankNo;
-    
-    @Column(name = "published_at", nullable = false)
-    private LocalDateTime publishedAt;
+
     
     @Builder
     public MonthlyRankingMV(String yearMonth, Long productId, Integer likeCount, Integer orderCount, 
-                           Integer viewCount, BigDecimal score, Integer rankNo, LocalDateTime publishedAt) {
+                           Integer viewCount, BigDecimal score, Integer rankNo) {
         this.yearMonth = yearMonth;
         this.productId = productId;
         this.likeCount = likeCount != null ? likeCount : 0;
@@ -51,6 +49,5 @@ public class MonthlyRankingMV extends BaseEntity {
         this.viewCount = viewCount != null ? viewCount : 0;
         this.score = score != null ? score : BigDecimal.ZERO;
         this.rankNo = rankNo;
-        this.publishedAt = publishedAt != null ? publishedAt : LocalDateTime.now();
     }
 }
