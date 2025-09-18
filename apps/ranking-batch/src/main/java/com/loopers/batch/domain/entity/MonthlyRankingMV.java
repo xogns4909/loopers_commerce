@@ -12,12 +12,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "mv_product_rank_monthly",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"year_month", "product_id"}))
+       uniqueConstraints = @UniqueConstraint(columnNames = {"`year_month`", "product_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MonthlyRankingMV extends BaseEntity {
     
-    @Column(name = "year_month", nullable = false, length = 6)
+    @Column(name = "`year_month`", nullable = false, length = 6)
     private String yearMonth;
     
     @Column(name = "product_id", nullable = false)

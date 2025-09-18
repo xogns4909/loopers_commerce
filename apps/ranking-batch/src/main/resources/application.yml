@@ -8,31 +8,18 @@ spring:
   application:
     name: ranking-batch
     
-  # DataSource 직접 설정
-  datasource:
-    url: jdbc:mysql://localhost:3306/loopers
-    username: application
-    password: application
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 30000
-      
-  # JPA 설정
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-        format_sql: true
-        show_sql: false
+  config:
+    import:
+      - jpa.yml
+      - logging.yml
+      - monitoring.yml
     
   batch:
     job:
       enabled: false  # 자동 실행 방지
-    initialize-schema: never
+    jdbc:
+      initialize-schema: always  # Spring Batch 테이블 자동 생성
+      table-prefix: BATCH_
     
   data:
     redis:
@@ -59,6 +46,12 @@ spring:
     activate:
       on-profile: local
       
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+      
 logging:
   level:
     com.loopers.batch: DEBUG
@@ -70,11 +63,12 @@ spring:
     activate:
       on-profile: prod
       
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-    
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      
 logging:
   level:
     com.loopers.batch: INFO
