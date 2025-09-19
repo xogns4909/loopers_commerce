@@ -43,9 +43,17 @@ public class WeeklyRankingTopWriter implements ItemWriter<WeeklyRankingMV>, Step
     @Override
     @Transactional
     public void beforeStep(StepExecution stepExecution) {
-        LocalDate date = LocalDate.parse(targetDate);
+        if (targetDate == null || targetDate.isBlank()) {
+            throw new IllegalArgumentException("jobParameters['targetDate']는 필수입니다");
+        }
         
-
+        LocalDate date;
+        try {
+            date = LocalDate.parse(targetDate);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("targetDate 형식이 잘못되었습니다(예: 2025-09-18): " + targetDate, e);
+        }
+        
         repository.deleteByTargetDate(date);
         log.info("기존 데이터 삭제 완료 - 날짜: {}", date);
         

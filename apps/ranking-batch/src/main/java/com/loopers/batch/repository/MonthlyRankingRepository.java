@@ -14,7 +14,7 @@ import java.util.List;
 public interface MonthlyRankingRepository extends JpaRepository<MonthlyRankingMV, Long> {
 
 
-    @Modifying
-    @Query("DELETE FROM MonthlyRankingMV w WHERE w.targetDate = :targetDate")
-    void deleteByTargetDate(@Param("targetDate") LocalDate targetDate);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM MonthlyRankingMV m WHERE m.targetDate = :targetDate")
+    int deleteByTargetDate(@Param("targetDate") LocalDate targetDate);
 }

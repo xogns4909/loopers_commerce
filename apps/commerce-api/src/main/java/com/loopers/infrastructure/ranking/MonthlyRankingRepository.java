@@ -5,6 +5,7 @@ import com.loopers.domain.ranking.MonthlyRankingMV;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -15,5 +16,5 @@ public interface MonthlyRankingRepository extends JpaRepository<MonthlyRankingMV
     Optional<MonthlyRankingMV> findByProductIdAndTargetDate(Long productId, LocalDate targetDate);
 
     @Query("select max(m.targetDate) from MonthlyRankingMV m where m.targetDate <= :targetDate")
-    LocalDate findLatestTargetDate(LocalDate targetDate);
+    LocalDate findLatestTargetDate(@Param("targetDate") LocalDate targetDate);
 }

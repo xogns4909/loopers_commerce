@@ -63,12 +63,23 @@ public class MonthlyRankingTopWriter implements ItemWriter<MonthlyRankingMV>, St
     @Transactional
     public ExitStatus afterStep(StepExecution stepExecution) {
         List<MonthlyRankingMV> finalTop = new ArrayList<>(topProducts);
-        finalTop.sort(Comparator.comparing(MonthlyRankingMV::getRankingScore).reversed());
+        finalTop.sort(Comparator
+            .comparing(MonthlyRankingMV::getRankingScore).reversed()
+            .thenComparing(MonthlyRankingMV::getOrderCount, Comparator.reverseOrder())
+            .thenComparing(MonthlyRankingMV::getLikeCount, Comparator.reverseOrder())
+            .thenComparing(MonthlyRankingMV::getViewCount, Comparator.reverseOrder())
+            .thenComparing(MonthlyRankingMV::getProductId)
+        );
 
-        // rank_no 채움 (reflection 금지)
-        int rank = 1;
-        for (MonthlyRankingMV mv : finalTop) {
-            mv.setRankNo(rank++);
+        // 동점 처리: 동일 점수는 같은 랭크 부여
+        int rank = 0;
+        BigDecimal prevScore = null;
+        for (MonthlyRankingMV cur : finalTop) {
+            if (prevScore == null || cur.getRankingScore().compareTo(prevScore) != 0) {
+                rank++;
+                prevScore = cur.getRankingScore();
+            }
+            cur.setRankNo(rank);
         }
 
         if (!finalTop.isEmpty()) {

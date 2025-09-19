@@ -31,8 +31,10 @@ public class RankingController {
         @RequestParam(defaultValue = "20") int size,
         @RequestParam(defaultValue = "1") int page
     ) {
-        if (page < 1) page = 1;
-        if (size < 1) size = 20;
+        final int MAX_PAGE_SIZE = 100;
+        page = Math.max(page, 1);
+        size = Math.max(size, 1);
+        size = Math.min(size, MAX_PAGE_SIZE);
 
         PeriodType p = PeriodType.from(period);
         LocalDate targetDate = parseDate(date);
