@@ -1,0 +1,27 @@
+spring:
+  config:
+    import:
+      - jpa.yml
+      
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 1000ms
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+      
+logging:
+  level:
+    com.loopers.batch: DEBUG
+    org.springframework.batch: INFO
+    
+# 테스트용 배치 설정
+batch:
+  chunk-size: 10
+  page-size: 10
+  skip-limit: 5
